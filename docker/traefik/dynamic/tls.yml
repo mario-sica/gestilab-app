@@ -1,0 +1,13 @@
+# Certificato locale emesso da mkcert (CA di sviluppo, mai usata in prod).
+# I file .pem referenziati qui sono generati da mkcert in docker/traefik/certs/
+# e non sono versionati (vedi .gitignore): vanno rigenerati da chi clona il
+# repository, seguendo README.md in quella cartella.
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/gestilab.test.pem
+      keyFile: /etc/traefik/certs/gestilab.test-key.pem
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/gestilab.test.pem
+        keyFile: /etc/traefik/certs/gestilab.test-key.pem

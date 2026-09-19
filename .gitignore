@@ -13,6 +13,9 @@ build/
 .env
 .env.*.local
 
+# certificati TLS locali (mkcert), specifici della macchina
+docker/traefik/certs/*.pem
+
 # test / coverage
 coverage/
 
