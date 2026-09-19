@@ -1,0 +1,37 @@
+{
+  "root": true,
+  "env": {
+    "es2022": true,
+    "node": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "Literal[value=/gestilab\\.(it|test)/]",
+        "message": "Dominio hardcoded vietato: usa BASE_DOMAIN da variabili d'ambiente (packages/shared/env.ts)."
+      },
+      {
+        "selector": "TemplateElement[value.raw=/gestilab\\.(it|test)/]",
+        "message": "Dominio hardcoded vietato: usa BASE_DOMAIN da variabili d'ambiente (packages/shared/env.ts)."
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    ".next",
+    ".turbo",
+    "coverage",
+    "*.config.js",
+    "*.config.cjs",
+    "*.config.mjs"
+  ]
+}
