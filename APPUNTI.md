@@ -107,3 +107,28 @@ dev usa lo stage `deps` con bind mount, mai `runner`):
   serviti oggi sono pochi e noti. `/etc/hosts` non supporta wildcard: un
   futuro slug di tenant andrà aggiunto a mano finché non si passa a
   `dnsmasq` (opzione lasciata nel README dei certificati).
+
+## Bug post-consegna: `pnpm dev` rotto dopo aver usato `pnpm local-prod`
+
+Segnalato dall'utente dopo la consegna della 0.2b. Riprodotto: `web` usciva
+con `sh: pnpm: not found`, `api` con `EACCES` su `/pnpm-store/v11`.
+
+**Causa**: `compose.yaml`, `compose.dev.yaml` e `compose.local-prod.yaml`
+costruivano tutti la stessa immagine (`gestilab-app-web`/`gestilab-app-api`,
+nome di default derivato dal progetto), differenziata solo dal `target` di
+build (`deps` in dev, `runner` di default in local-prod). `docker compose up`
+senza `--build` riusa un'immagine già presente con quel nome **a prescindere
+dal target richiesto**: dopo un `pnpm local-prod`, l'immagine taggata
+`gestilab-app-web` era quella `runner` (niente pnpm/corepack, utente `node`
+non root); un successivo `pnpm dev` (che non passa `--build`) la riusava così
+com'è, invece di ricostruirla per lo stage `deps`.
+
+**Fix**: nome immagine esplicito e distinto per profilo
+(`gestilab-web-dev`/`gestilab-api-dev` in `compose.dev.yaml`,
+`gestilab-web-local-prod`/`gestilab-api-local-prod` in
+`compose.local-prod.yaml`), così i due profili non possono più scambiarsi
+un'immagine costruita per lo stage sbagliato. Riverificato: `pnpm local-prod`
+→ `down` → `pnpm dev` **senza** `--build` in mezzo, tutti gli 8 container
+healthy, `localhost:3000` e `localhost:3001/api/v1/salute` rispondono. Lo
+stesso principio andrà applicato quando si scriverà `compose.prod.yaml`
+(0.2c): nome immagine proprio, non condiviso con `local-prod`.

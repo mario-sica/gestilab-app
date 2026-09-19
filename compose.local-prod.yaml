@@ -29,6 +29,10 @@ services:
         condition: service_healthy
 
   web:
+    # nome distinto da compose.dev.yaml (vedi commento lì) e dal futuro
+    # compose.prod.yaml, per evitare che profili diversi si scambino per
+    # sbaglio un'immagine già buildata per un target diverso.
+    image: gestilab-web-local-prod
     environment:
       BASE_DOMAIN: gestilab.test
     labels:
@@ -41,5 +45,6 @@ services:
       - traefik.http.services.web.loadbalancer.server.port=3000
 
   api:
+    image: gestilab-api-local-prod
     environment:
       BASE_DOMAIN: gestilab.test
