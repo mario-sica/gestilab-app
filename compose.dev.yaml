@@ -1,0 +1,101 @@
+# Profilo dev: bind mount del sorgente per l'hot reload, porte pubblicate su
+# localhost, node_modules sempre in volume nominato (mai dall'host, altrimenti
+# si trascinano binari nativi incompatibili con il container). Ogni bind mount
+# ha il suffisso :z: su Fedora con SELinux, senza, il container vede la
+# cartella vuota.
+
+services:
+  web:
+    build:
+      target: deps
+    command: >
+      sh -c "pnpm install --frozen-lockfile --filter @gestilab/web...
+             --store-dir /pnpm-store &&
+             pnpm --filter @gestilab/web run dev -- --hostname 0.0.0.0 --port 3000"
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app:z
+      - pnpm_store:/pnpm-store
+      - nm_web_root:/app/node_modules
+      - nm_web_web:/app/apps/web/node_modules
+      - nm_web_api:/app/apps/api/node_modules
+      - nm_web_shared:/app/packages/shared/node_modules
+      - nm_web_db:/app/packages/db/node_modules
+    healthcheck:
+      start_period: 90s
+
+  api:
+    build:
+      target: deps
+    command: >
+      sh -c "pnpm install --frozen-lockfile --filter @gestilab/api...
+             --store-dir /pnpm-store &&
+             pnpm --filter @gestilab/api run dev"
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/app:z
+      - pnpm_store:/pnpm-store
+      - nm_api_root:/app/node_modules
+      - nm_api_web:/app/apps/web/node_modules
+      - nm_api_api:/app/apps/api/node_modules
+      - nm_api_shared:/app/packages/shared/node_modules
+      - nm_api_db:/app/packages/db/node_modules
+    healthcheck:
+      start_period: 90s
+
+  db:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  storage:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  mailpit:
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+  glitchtip:
+    ports:
+      - "8000:8000"
+
+  adminer:
+    image: adminer:latest
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pnpm_store:
+  nm_web_root:
+  nm_web_web:
+  nm_web_api:
+  nm_web_shared:
+  nm_web_db:
+  nm_api_root:
+  nm_api_web:
+  nm_api_api:
+  nm_api_shared:
+  nm_api_db:
