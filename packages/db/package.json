@@ -7,6 +7,17 @@
   "types": "./src/index.ts",
   "scripts": {
     "lint": "eslint . --config ../../eslint.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "migrate": "tsx src/migrate.ts",
+    "generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13"
   }
 }

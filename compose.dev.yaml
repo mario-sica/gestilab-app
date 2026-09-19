@@ -22,6 +22,11 @@ services:
       - pnpm install --frozen-lockfile --filter @gestilab/web... --store-dir /pnpm-store && pnpm --filter @gestilab/web exec next dev --hostname 0.0.0.0 --port 3000
     environment:
       NODE_ENV: development
+      # pnpm chiede conferma interattiva prima di modificare node_modules
+      # quando il lockfile cambia (nuove dipendenze in un pacchetto del
+      # workspace); nel container non c'è una TTY per rispondere. CI=true è
+      # il modo che pnpm stesso documenta per un install non presidiato.
+      CI: "true"
     ports:
       - "3000:3000"
     volumes:
@@ -43,9 +48,12 @@ services:
     command:
       - sh
       - -c
-      - pnpm install --frozen-lockfile --filter @gestilab/api... --store-dir /pnpm-store && pnpm --filter @gestilab/api run dev
+      # anche @gestilab/db, non solo @gestilab/api: "pnpm db:migrate" (radice)
+      # esegue le migrazioni in questo stesso container (docs/CLAUDE.md).
+      - pnpm install --frozen-lockfile --filter @gestilab/api... --filter @gestilab/db... --store-dir /pnpm-store && pnpm --filter @gestilab/api run dev
     environment:
       NODE_ENV: development
+      CI: "true"
     ports:
       - "3001:3001"
     volumes:
