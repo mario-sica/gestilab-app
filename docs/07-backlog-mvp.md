@@ -20,7 +20,7 @@ Tutto l'MVP gira **in locale**. Nessun dominio registrato, nessun VPS, nessun se
 | 0.5 | RLS su tutte le tabelle tenant + test che una query senza contesto tenant fallisce | M | Test di integrazione verde |
 | 0.6 | Middleware Next.js: risoluzione tenant da host, cache 60 s, 404 su host ignoto | M | `dellaquila.localhost:3000` ok, `pippo.localhost:3000` → 404 |
 | 0.7 | Plugin Fastify: errori, rate limit, OpenAPI, contesto tenant, logger | M | `/api/v1/salute` risponde; OpenAPI generato |
-| 0.8 | CI: lint, typecheck, test, build immagini | S | Pipeline verde su main |
+| 0.8 | CI: lint, typecheck, test, build immagini | S | Pipeline verde su dev (main resta congelato allo scheletro 0.1, vedi `docs/04-convenzioni-codice.md`) |
 | 0.9 | Regola che vieta domini hardcoded (lint o test): tutto passa da `BASE_DOMAIN` | S | Un `gestilab.it` in un sorgente fa fallire la CI |
 | 0.10 | Script `backup:crea` e `backup:verifica` | M | Ripristino su db temporaneo con conteggio righe corretto |
 

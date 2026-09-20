@@ -4,3 +4,8 @@ packages:
 allowBuilds:
   esbuild: true
   unrs-resolver: true
+# postcss@8.4.31 (vulnerabilità alta, GHSA-6g55-p6wh-862q e GHSA-r28c-9q8g-f849)
+# è una dipendenza interna di next@15.5.25, non nostra: senza questo override
+# resta usata così com'è finché Next non aggiorna la propria dipendenza.
+overrides:
+  postcss: ^8.5.28
