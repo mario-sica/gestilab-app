@@ -30,9 +30,12 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
-  // regole condivise su tutto il codice TypeScript del monorepo
+  // regole condivise su tutto il codice del monorepo: non solo .ts/.tsx,
+  // anche eventuali file di configurazione .js/.mjs/.cjs futuri (oggi
+  // nessuno contiene un dominio, ma la regola deve valere a prescindere
+  // dall'estensione).
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.mjs', '**/*.cjs'],
     languageOptions: {
       globals: {
         ...globals.node,

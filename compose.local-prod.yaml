@@ -34,12 +34,15 @@ services:
     # sbaglio un'immagine già buildata per un target diverso.
     image: gestilab-web-local-prod
     environment:
-      BASE_DOMAIN: gestilab.test
+      BASE_DOMAIN: ${BASE_DOMAIN}
     labels:
       - traefik.enable=true
       # Traefik v3: Host() accetta un solo parametro per chiamata, a
-      # differenza di v2; più host si combinano con ||.
-      - traefik.http.routers.web.rule=Host(`dellaquila.gestilab.test`) || Host(`demo.gestilab.test`) || Host(`app.gestilab.test`) || Host(`console.gestilab.test`)
+      # differenza di v2; più host si combinano con ||. ${BASE_DOMAIN}
+      # (non il letterale "gestilab.test"): lo script "pnpm local-prod"
+      # lo esporta prima di invocare docker compose, per sovrascrivere
+      # quello di sviluppo definito in .env (vedi package.json).
+      - traefik.http.routers.web.rule=Host(`dellaquila.${BASE_DOMAIN}`) || Host(`demo.${BASE_DOMAIN}`) || Host(`app.${BASE_DOMAIN}`) || Host(`console.${BASE_DOMAIN}`)
       - traefik.http.routers.web.entrypoints=websecure
       - traefik.http.routers.web.tls=true
       - traefik.http.services.web.loadbalancer.server.port=3000
@@ -47,4 +50,4 @@ services:
   api:
     image: gestilab-api-local-prod
     environment:
-      BASE_DOMAIN: gestilab.test
+      BASE_DOMAIN: ${BASE_DOMAIN}
