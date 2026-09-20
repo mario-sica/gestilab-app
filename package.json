@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "docker compose -f compose.yaml -f compose.dev.yaml up",
+    "dev:auth": "docker compose -f compose.yaml -f compose.dev.yaml --profile auth up",
     "dev:local": "turbo run dev",
     "local-prod": "BASE_DOMAIN=gestilab.test docker compose -f compose.yaml -f compose.local-prod.yaml up",
     "db:migrate": "docker compose -f compose.yaml -f compose.dev.yaml exec api pnpm --filter @gestilab/db run migrate",
