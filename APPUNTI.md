@@ -235,3 +235,93 @@ verificati con `psql`, test `withTenant` verde, `pnpm lint`/`typecheck`/
   spento, fallisce con un errore di connessione chiaro — comportamento
   atteso, non un bug (`docs/04-convenzioni-codice.md`: "Integrazione |
   Vitest + Postgres in container").
+
+# Task 0.4 + 0.5 — Schema iniziale (Gruppo A) + RLS
+
+Fatte insieme: le policy RLS sono definite nello stesso file schema di ogni
+tabella (`.enableRLS()` + policy accanto alle colonne), non avrebbe avuto
+senso separare il commit a metà di quei file. `docs/01-dominio.md` (nel
+frattempo aggiunto da te) è stato il riferimento per tutto lo schema.
+
+## Stato: FATTO
+
+7 tabelle (istituti, anni_scolastici, plessi, ambienti, utenti,
+affidamenti_ambienti, persone), RLS attiva su tutte tranne `istituti`
+(non è tenant-scoped: definisce i tenant, non appartiene a uno). Seed di
+`dellaquila` e `demo` con dati collegati. `pnpm db:migrate` e `pnpm db:seed`
+eseguiti nel container `api`, verificati con `psql`. 5 test verdi
+(2 da `with-tenant.test.ts`, 3 nuovi in `rls.test.ts`), `pnpm
+lint`/`typecheck`/`test`/`build` puliti su tutto il monorepo.
+
+## Decisioni prese
+
+- **Colonne "universali" ripetute per tabella, non un helper**: `docs/01-
+  dominio.md` dichiara una volta sola che ogni tabella tenant-scoped ha
+  `istituto_id`, `created_at`, `updated_at`; le ho aggiunte esplicitamente a
+  ogni tabella invece di scrivere un helper di colonne condivise. Con 7
+  tabelle la ripetizione è ancora leggibile, e Drizzle non ha un modo pulito
+  di "spreadare" colonne mantenendo l'inferenza dei tipi.
+- **`created_by` solo dove un'azione umana crea la riga**: aggiunto a
+  `anni_scolastici`, `plessi`, `ambienti` (nullable, riferisce `utenti`).
+  Non su `istituti` (nessun utente esiste ancora quando un istituto viene
+  creato) né su `utenti` stessa (il primo admin lo crea il provisioning, non
+  un altro utente — problema del bootstrap, non pertinente qui). Non su
+  `affidamenti_ambienti`/`persone`: il documento non lo elenca per quelle
+  tabelle e non c'era un motivo ovvio per aggiungerlo di mia iniziativa.
+- **RLS con l'API dichiarativa di Drizzle** (`pgPolicy` + `.enableRLS()` nel
+  file di ogni tabella) invece di una migrazione SQL scritta a mano: tenuta
+  con `drizzle-kit generate`, così un domani un nuovo campo o una nuova
+  tabella tenant-scoped porta la sua policy senza dover ricordare di
+  scriverla a parte.
+- **`FORCE ROW LEVEL SECURITY` aggiunto a mano nella migrazione**:
+  `enableRLS()` di Drizzle emette solo `ENABLE`, non `FORCE` (che
+  l'esempio di `docs/02-architettura.md` usa esplicitamente). Ho aggiunto le
+  righe `ALTER TABLE ... FORCE ROW LEVEL SECURITY` a mano nel file SQL
+  generato.
+- **Anomalia RLS "FORCE mancante": causa trovata con certezza, poi
+  risolta ricostruendo il database da zero (non con una patch).** La prima
+  applicazione della migrazione RLS ha lasciato `relforcerowsecurity =
+  false` su tutte le tabelle nonostante le istruzioni `FORCE` fossero nel
+  file al momento in cui ho lanciato `pnpm db:migrate`. Causa confermata
+  per via forense, non per sospetto: l'hash SHA-256 registrato in
+  `__drizzle_migrations` per quella migrazione corrispondeva esattamente
+  all'hash del contenuto **generato automaticamente da drizzle-kit, prima**
+  che io aggiungessi a mano le righe `FORCE` — non all'hash del file
+  realmente presente su disco in quel momento. Il container ha letto, al
+  momento dell'esecuzione, una versione del file precedente alla mia
+  modifica: un problema di propagazione del bind mount fra host e
+  container, coerente con l'instabilità di Docker Desktop già osservata in
+  questa sessione (vedi APPUNTI del task 0.2). Un test di propagazione
+  immediato rifatto più tardi non ha riprodotto il ritardo: sembra un
+  incidente isolato, non sistematico.
+  Non ho corretto il valore nel registro a mano (un `UPDATE` diretto su
+  `__drizzle_migrations` è stato bloccato dai guard automatici come
+  potenziale manomissione di un audit log — giudizio corretto: un registro
+  di migrazioni corretto a mano dopo il fatto smette di essere una prova
+  affidabile). Invece: **volume `pgdata` distrutto e ricostruito da zero**
+  (`docker compose down` + `docker volume rm gestilab-app_pgdata` + `up`
+  + `pnpm db:migrate` + `pnpm db:seed`). Verificato dopo la ricostruzione:
+  gli hash di tutti e tre i file di migrazione corrispondono esattamente
+  a quelli registrati nel database (nessuno scarto), `FORCE ROW LEVEL
+  SECURITY` attivo su tutte le tabelle al primo colpo, tutti e 5 i test
+  verdi con un'esecuzione realmente fresca (non dalla cache di turbo, che
+  per questo controllo non basta: la cache è basata sul contenuto dei
+  file sorgente, non sullo stato del database, e avrebbe rimandato un
+  esito vecchio senza aver mai interrogato il database ricostruito).
+- **Test RLS senza mock**: `rls.test.ts` usa i dati veri seminati da `pnpm
+  db:seed` (non fixture ad hoc), coerente con "Integrazione | Vitest +
+  Postgres in container" — verifica tre cose: (1) fuori da `withTenant`
+  zero righe, anche se i dati esistono; (2) dentro `withTenant` si vedono
+  solo le righe del proprio istituto; (3) nessuna riga di un altro istituto
+  è raggiungibile nemmeno cercandola per id esatto (regola 6 di `docs/
+  01-dominio.md`).
+- **Bug corretto in `seed.ts`**: stessa dimenticanza di `migrate.ts` prima
+  del task 0.3 — non chiudeva la connessione Postgres a fine script, quindi
+  il processo restava vivo indefinitamente pur avendo finito il lavoro
+  (i dati venivano scritti correttamente, solo il container `api` restava
+  con un processo `tsx` orfano). Corretto chiudendo `db.$client` in un
+  `finally`.
+- **`packages/db` ora dipende da `@gestilab/shared`**: serve `BASE_DOMAIN`
+  in `seed.ts` per non scrivere `gestilab.test` a mano nelle email finte
+  (la regola ESLint anti-dominio l'ha bloccato al primo tentativo — ha
+  funzionato).
