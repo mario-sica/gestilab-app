@@ -11,7 +11,9 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      # 127.0.0.1 esplicito: Node in ascolto su 0.0.0.0 non risponde su ::1,
+      # e "localhost" nel container risolve prima su IPv6.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -29,7 +31,8 @@ services:
     environment:
       API_HOST: 0.0.0.0
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/v1/salute"]
+      # 127.0.0.1 esplicito: stesso motivo del servizio web.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/api/v1/salute"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -102,18 +105,27 @@ services:
       EMAIL_URL: ${GLITCHTIP_EMAIL_URL}
       GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
       PORT: 8000
-    command: >
-      sh -c "./manage.py migrate --noinput &&
-             ./manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 --workers 2 glitchtip.wsgi:application"
+      # SERVER_ROLE=all_in_one fa eseguire a ./bin/start.sh (comando di
+      # default dell'immagine) migrazioni + web + worker in un solo processo:
+      # un unico servizio "glitchtip", come richiesto, senza reinventare lo
+      # script di avvio (che gestisce anche i permessi corretti sui file
+      # statici, a differenza di un collectstatic manuale).
+      SERVER_ROLE: all_in_one
     volumes:
       - glitchtipdata:/code/uploads
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/_health/"]
+      # niente curl/wget in questa immagine: usa il python già presente.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/_health/')",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 40s
     depends_on:
       db:
         condition: service_healthy
