@@ -21,12 +21,21 @@ function ottieniDb(): Db {
   return db;
 }
 
+const REGEX_IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+
 /**
  * Estrae il primo segmento dell'host (il candidato slug del tenant).
- * `null` se l'host non ha un sottodominio (es. il dominio di base da solo).
+ * `null` se l'host non ha un sottodominio (es. il dominio di base da solo)
+ * o se è un indirizzo IP: gli healthcheck Docker (`compose.yaml`) e le
+ * chiamate interne al container colpiscono `127.0.0.1`, i cui "segmenti"
+ * numerici (`127`, `0`, `0`, `1`) altrimenti verrebbero letti come un
+ * tentativo di slug — un IP non è mai un sottodominio di tenant.
  */
 export function estraiSlug(host: string): string | null {
   const hostname = host.split(':')[0] ?? '';
+  if (REGEX_IPV4.test(hostname)) {
+    return null;
+  }
   const parti = hostname.split('.');
   if (parti.length < 2) {
     return null;
