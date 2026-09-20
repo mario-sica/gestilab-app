@@ -1,6 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { creaClient, type Db } from '@gestilab/db';
-import { istituti } from '@gestilab/db/schema';
+import { creaClient, trovaIstitutoAttivoDaSlug, type Db } from '@gestilab/db';
 import { leggiEnv, slugValido, SLUG_RISERVATI } from '@gestilab/shared';
 
 // Risoluzione tenant da host (docs/02-architettura.md § Risoluzione del
@@ -52,14 +50,10 @@ export async function risolviTenant(slug: string): Promise<{ id: string } | null
     return voce.istitutoId ? { id: voce.istitutoId } : null;
   }
 
-  const righe = await ottieniDb()
-    .select({ id: istituti.id })
-    .from(istituti)
-    .where(eq(istituti.slug, slug));
-  const istituto = righe[0];
+  const istituto = await trovaIstitutoAttivoDaSlug(ottieniDb(), slug);
 
   cache.set(slug, { istitutoId: istituto?.id ?? null, scadenza: adesso + TTL_MS });
-  return istituto ? { id: istituto.id } : null;
+  return istituto;
 }
 
 export function validoPerLookup(slug: string): boolean {
