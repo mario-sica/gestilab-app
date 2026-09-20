@@ -278,21 +278,36 @@ lint`/`typecheck`/`test`/`build` puliti su tutto il monorepo.
   l'esempio di `docs/02-architettura.md` usa esplicitamente). Ho aggiunto le
   righe `ALTER TABLE ... FORCE ROW LEVEL SECURITY` a mano nel file SQL
   generato.
-- **Anomalia osservata e non del tutto spiegata**: la prima applicazione
-  della migrazione RLS ha lasciato `relforcerowsecurity = false` su tutte e
-  sei le tabelle nonostante le istruzioni `FORCE` fossero nel file eseguito
-  (confermato: `__drizzle_migrations` mostra 3 migrazioni applicate, la
-  terza con l'hash del file corretto). Una riproduzione isolata con lo
-  stesso identico pattern di esecuzione di Drizzle (transazione + loop di
-  `tx.unsafe()` sugli statement) **non ha riprodotto il problema** — ha
-  funzionato al primo colpo. Applicato `ALTER TABLE ... FORCE ROW LEVEL
-  SECURITY` a mano per tutte e sei le tabelle (verificato con
-  `pg_class.relforcerowsecurity`), stato attuale del database corretto. Non
-  ho un sospetto solido sulla causa (nel frattempo nella sessione c'erano
-  processi di seed orfani da un bug precedente, uccisi prima di questa
-  migrazione — possibile concausa, non verificata). Se in futuro un clone
-  pulito del repository (`pnpm db:migrate` da zero) risultasse con `FORCE`
-  non applicato, è il primo posto da controllare.
+- **Anomalia RLS "FORCE mancante": causa trovata con certezza, poi
+  risolta ricostruendo il database da zero (non con una patch).** La prima
+  applicazione della migrazione RLS ha lasciato `relforcerowsecurity =
+  false` su tutte le tabelle nonostante le istruzioni `FORCE` fossero nel
+  file al momento in cui ho lanciato `pnpm db:migrate`. Causa confermata
+  per via forense, non per sospetto: l'hash SHA-256 registrato in
+  `__drizzle_migrations` per quella migrazione corrispondeva esattamente
+  all'hash del contenuto **generato automaticamente da drizzle-kit, prima**
+  che io aggiungessi a mano le righe `FORCE` — non all'hash del file
+  realmente presente su disco in quel momento. Il container ha letto, al
+  momento dell'esecuzione, una versione del file precedente alla mia
+  modifica: un problema di propagazione del bind mount fra host e
+  container, coerente con l'instabilità di Docker Desktop già osservata in
+  questa sessione (vedi APPUNTI del task 0.2). Un test di propagazione
+  immediato rifatto più tardi non ha riprodotto il ritardo: sembra un
+  incidente isolato, non sistematico.
+  Non ho corretto il valore nel registro a mano (un `UPDATE` diretto su
+  `__drizzle_migrations` è stato bloccato dai guard automatici come
+  potenziale manomissione di un audit log — giudizio corretto: un registro
+  di migrazioni corretto a mano dopo il fatto smette di essere una prova
+  affidabile). Invece: **volume `pgdata` distrutto e ricostruito da zero**
+  (`docker compose down` + `docker volume rm gestilab-app_pgdata` + `up`
+  + `pnpm db:migrate` + `pnpm db:seed`). Verificato dopo la ricostruzione:
+  gli hash di tutti e tre i file di migrazione corrispondono esattamente
+  a quelli registrati nel database (nessuno scarto), `FORCE ROW LEVEL
+  SECURITY` attivo su tutte le tabelle al primo colpo, tutti e 5 i test
+  verdi con un'esecuzione realmente fresca (non dalla cache di turbo, che
+  per questo controllo non basta: la cache è basata sul contenuto dei
+  file sorgente, non sullo stato del database, e avrebbe rimandato un
+  esito vecchio senza aver mai interrogato il database ricostruito).
 - **Test RLS senza mock**: `rls.test.ts` usa i dati veri seminati da `pnpm
   db:seed` (non fixture ad hoc), coerente con "Integrazione | Vitest +
   Postgres in container" — verifica tre cose: (1) fuori da `withTenant`
