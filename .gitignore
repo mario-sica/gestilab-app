@@ -2,6 +2,11 @@
 node_modules/
 .pnpm-store/
 
+# fixture temporanei del test della regola anti-dominio-hardcoded
+# (packages/shared/src/regola-dominio-hardcoded.test.ts): non dovrebbero mai
+# sopravvivere a un run, presenti solo come rete di sicurezza.
+**/.tmp-lint-fixture-*.ts
+
 # build
 dist/
 .next/

@@ -48,10 +48,10 @@ services:
     mem_limit: 512m
     cpus: 1.0
     environment:
-      BASE_DOMAIN: gestilab.it
+      BASE_DOMAIN: ${BASE_DOMAIN}
     labels:
       - traefik.enable=true
-      - traefik.http.routers.web.rule=Host(`dellaquila.gestilab.it`) || Host(`demo.gestilab.it`) || Host(`app.gestilab.it`) || Host(`console.gestilab.it`)
+      - traefik.http.routers.web.rule=Host(`dellaquila.${BASE_DOMAIN}`) || Host(`demo.${BASE_DOMAIN}`) || Host(`app.${BASE_DOMAIN}`) || Host(`console.${BASE_DOMAIN}`)
       - traefik.http.routers.web.entrypoints=websecure
       - traefik.http.routers.web.tls=true
       - traefik.http.routers.web.tls.certresolver=letsencrypt
@@ -63,7 +63,7 @@ services:
     mem_limit: 512m
     cpus: 1.0
     environment:
-      BASE_DOMAIN: gestilab.it
+      BASE_DOMAIN: ${BASE_DOMAIN}
 
   db:
     restart: *restart-policy
