@@ -1,5 +1,9 @@
 # 02 — Architettura, Docker, tenancy e routing
 
+## Tre repository
+
+GestiLab è diviso in tre repository: questo (`gestilab-app`, codice applicativo, Dockerfile, CI/CD, ambiente di sviluppo locale), [`gestilab-auth-service`](https://github.com/mario-sica/gestilab-auth-service) (autenticazione, **privato**) e [`gestilab-infra`](https://github.com/mario-sica/gestilab-infra) (deploy di produzione, `compose.prod.yaml`, Traefik prod). Il `README.md` di questo repository spiega perché; questo documento descrive solo ciò che vive qui.
+
 ## Servizi
 
 | Servizio | Immagine / base | Ruolo | Porta interna |
@@ -18,14 +22,16 @@
 
 Un solo stack, tre profili. **Non esistono rami di codice diversi fra locale e produzione**: cambiano solo le variabili d'ambiente.
 
-| File | Profilo | Quando |
-|---|---|---|
-| `compose.yaml` | base | definizione condivisa dei servizi |
-| `compose.dev.yaml` | `dev` | sviluppo quotidiano: bind mount, hot reload, porte su localhost, mailpit, adminer, seed |
-| `compose.local-prod.yaml` | `local-prod` | verifica di prontezza: immagini buildate, Traefik con CA locale, HTTPS su `*.gestilab.test`, backup attivi, nessun bind mount |
-| `compose.prod.yaml` | `prod` | scritto e versionato, **non ancora eseguito**: Traefik con Let's Encrypt DNS-01, restart policy, limiti risorse |
+| File | Profilo | Dove vive | Quando |
+|---|---|---|---|
+| `compose.yaml` | base | questo repository | definizione condivisa dei servizi |
+| `compose.dev.yaml` | `dev` | questo repository | sviluppo quotidiano: bind mount, hot reload, porte su localhost, mailpit, adminer, seed |
+| `compose.local-prod.yaml` | `local-prod` | questo repository | verifica di prontezza: immagini buildate, Traefik con CA locale, HTTPS su `*.gestilab.test`, backup attivi, nessun bind mount |
+| `compose.prod.yaml` | `prod` | [`gestilab-infra`](https://github.com/mario-sica/gestilab-infra) | scritto e versionato, **non ancora eseguito**: Traefik con Let's Encrypt DNS-01, restart policy, limiti risorse |
 
 `local-prod` è il profilo che dimostra la prontezza alla produzione senza spendere nulla: è identico a `prod` tranne l'emittente del certificato e il dominio di base. Ogni volta che si tocca infrastruttura, si riverifica lì.
+
+`compose.prod.yaml` vive in un repository diverso (`gestilab-infra`) come overlay di `compose.yaml`: è un artefatto di *deploy*, non di sviluppo, coerente con la separazione in tre repository (vedi `README.md` di questo repository per il quadro completo). `compose.local-prod.yaml` resta qui perché è uno strumento di verifica locale, non un artefatto che si esegue mai fuori dalla macchina di sviluppo.
 
 Regole:
 - Immagini multi-stage: `deps` → `build` → `runner`. `runner` contiene solo dipendenze di produzione e output di build; utente `node`, non root.
@@ -132,9 +138,9 @@ Regole:
 - **Un cambiamento infrastrutturale non è concluso finché non è verificato in questo profilo.**
 
 ### Produzione (non ancora attiva)
-Il file esiste, versionato e mantenuto, ma non è mai stato eseguito. Contiene: Traefik con Let's Encrypt DNS-01 per il wildcard, `restart: unless-stopped`, limiti CPU e memoria, nessuna porta esposta oltre 80 e 443, log a livello `info`.
+`compose.prod.yaml` vive in [`gestilab-infra`](https://github.com/mario-sica/gestilab-infra), non in questo repository: esiste, versionato e mantenuto, ma non è mai stato eseguito. Contiene: Traefik con Let's Encrypt DNS-01 per il wildcard, `restart: unless-stopped`, limiti CPU e memoria, nessuna porta esposta oltre 80 e 443, log a livello `info`.
 
-Quando arriverà il momento, il passaggio è: registrare il dominio, puntare il DNS wildcard al VPS, impostare `BASE_DOMAIN`, il token del provider DNS e i DSN dei servizi esterni, `docker compose -f compose.yaml -f compose.prod.yaml up -d`. Nessuna modifica al codice.
+Quando arriverà il momento, il passaggio è: registrare il dominio, puntare il DNS wildcard al VPS, impostare `BASE_DOMAIN`, il token del provider DNS e i DSN dei servizi esterni, poi la procedura di deploy documentata nel `README.md` di `gestilab-infra` (clona la release di questo repository, invoca `docker compose` con entrambi gli overlay). Nessuna modifica al codice.
 
 ## Prontezza alla produzione, dimostrata in locale
 
