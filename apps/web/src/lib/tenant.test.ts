@@ -14,6 +14,12 @@ describe('estraiSlug', () => {
   it('ignora la porta', () => {
     expect(estraiSlug('www.localhost:3000')).toBe('www');
   });
+
+  it('restituisce null per un indirizzo IPv4 (es. healthcheck Docker su 127.0.0.1)', () => {
+    expect(estraiSlug('127.0.0.1:3000')).toBeNull();
+    expect(estraiSlug('127.0.0.1')).toBeNull();
+    expect(estraiSlug('172.18.0.8:3000')).toBeNull();
+  });
 });
 
 describe('eSlugRiservato', () => {
