@@ -514,7 +514,7 @@ Principi:
 - Healthcheck su ogni servizio; `depends_on: condition: service_healthy`.
 - Le migrazioni girano in un container one-shot (`api migrate`) prima dell'avvio, mai all'import del modulo.
 - Volumi nominati per `db` e `storage`; il codice è montato solo nel compose di sviluppo.
-- Tre file: `compose.yaml` (base), `compose.dev.yaml` (bind mount, hot reload, porte esposte), `compose.prod.yaml` (proxy, restart policy, limiti risorse).
+- `compose.yaml` (base) + `compose.dev.yaml` (bind mount, hot reload, porte esposte) + `compose.local-prod.yaml` (verifica locale) in questo repository; `compose.prod.yaml` (proxy, restart policy, limiti risorse) nel repository separato `gestilab-infra` (vedi `docs/02-architettura.md` § Tre repository).
 - Sviluppo locale multi-tenant: `*.localhost` risolve a 127.0.0.1 su Firefox e Chrome, quindi `dellaquila.localhost:3000` funziona senza toccare `/etc/hosts`.
 
 ### 10.5 Isolamento tenant (dettaglio tecnico)

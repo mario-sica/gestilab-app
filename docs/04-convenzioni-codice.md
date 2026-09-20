@@ -1,5 +1,7 @@
 # 04 — Struttura del repository e convenzioni di codice
 
+GestiLab è diviso in tre repository (`docs/02-architettura.md` § Tre repository): questa struttura descrive **solo `gestilab-app`**. L'autenticazione (login, password, PIN, TOTP, emissione sessione) vive in `gestilab-auth-service`, repository separato e privato — non in `apps/api`. `apps/api` legge le sessioni da uno store condiviso (plugin `sessione`, non `auth`) e possiede l'autorizzazione (ruolo, perimetro tenant), non l'autenticazione.
+
 ## Struttura
 ```
 gestilab/
@@ -18,16 +20,16 @@ gestilab/
 │  │  └─ middleware.ts      risoluzione tenant
 │  ├─ api/
 │  │  └─ src/
-│  │     ├─ moduli/         asset/, interventi/, segnalazioni/, auth/, admin/
+│  │     ├─ moduli/         asset/, interventi/, segnalazioni/, admin/
 │  │     │   └─ <modulo>/{rotte.ts,servizio.ts,repository.ts,test/}
-│  │     ├─ plugin/         auth, tenant, rate-limit, errori, openapi
+│  │     ├─ plugin/         sessione, tenant, rate-limit, errori, openapi
 │  │     └─ server.ts
 │  └─ worker/               job BullMQ: pdf, email, ricorrenze, pulizia
 ├─ packages/
 │  ├─ shared/               schemi Zod, tipi, enum, costanti, messaggi errore
 │  └─ db/                   schema Drizzle, migrazioni, seed, policy RLS
 ├─ docs/
-├─ compose.yaml, compose.dev.yaml, compose.prod.yaml
+├─ compose.yaml, compose.dev.yaml, compose.local-prod.yaml
 └─ .env.example
 ```
 

@@ -14,7 +14,7 @@ Tutto l'MVP gira **in locale**. Nessun dominio registrato, nessun VPS, nessun se
 | 0.1 | Monorepo pnpm + Turborepo, `apps/web`, `apps/api`, `packages/shared`, `packages/db`, lint, typecheck | M | `pnpm lint && pnpm typecheck` verdi su repo vuoto |
 | 0.2 | `compose.yaml` + `compose.dev.yaml` con web, api, db, redis, storage, mailpit, glitchtip; healthcheck e `.env.example` | M | `pnpm dev` avvia tutto; `http://localhost:3000` risponde |
 | 0.2b | `compose.local-prod.yaml`: immagini buildate, Traefik, mkcert, `BASE_DOMAIN=gestilab.test` | M | `https://dellaquila.gestilab.test` risponde con certificato valido |
-| 0.2c | `compose.prod.yaml` scritto e versionato, mai eseguito; differenze solo in env ed emittente TLS | S | Revisione a vista: nessuna differenza strutturale rispetto a `local-prod` |
+| 0.2c | `compose.prod.yaml` scritto e versionato, mai eseguito; differenze solo in env ed emittente TLS (migrato in `gestilab-infra` dopo la separazione in tre repository, vedi `docs/02-architettura.md`) | S | Revisione a vista: nessuna differenza strutturale rispetto a `local-prod` |
 | 0.3 | Drizzle: connessione, migrazioni, ruolo `app_user`, helper `withTenant` | M | Una migrazione applicata in container; helper testato |
 | 0.4 | Schema iniziale: istituti, anni_scolastici, plessi, ambienti, utenti, affidamenti, persone | M | Migrazione + seed di 2 tenant |
 | 0.5 | RLS su tutte le tabelle tenant + test che una query senza contesto tenant fallisce | M | Test di integrazione verde |
@@ -25,6 +25,8 @@ Tutto l'MVP gira **in locale**. Nessun dominio registrato, nessun VPS, nessun se
 | 0.10 | Script `backup:crea` e `backup:verifica` | M | Ripristino su db temporaneo con conteggio righe corretto |
 
 ## Fase 1 — Accessi
+
+Scritta prima della separazione in tre repository (`docs/02-architettura.md` § Tre repository): i task 1.2–1.5 (login, PIN, magic link, TOTP) implicano ora lavoro sia in `gestilab-auth-service` (credenziali, emissione sessione) sia qui (lettura della sessione dallo store condiviso, `richiediRuolo()`, cookie). Non ancora ripartiti task per task — da fare quando inizia il lavoro reale su questa fase, non in astratto ora.
 
 | # | Task | Dim | Fatto quando |
 |---|---|---|---|
