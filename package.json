@@ -1,0 +1,27 @@
+{
+  "name": "gestilab",
+  "private": true,
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint": "8.57.0",
+    "prettier": "^3.9.8",
+    "tsx": "^4.23.13",
+    "turbo": "^2.11.0",
+    "typescript": "6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

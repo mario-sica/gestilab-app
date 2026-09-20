@@ -1,0 +1,28 @@
+# dipendenze
+node_modules/
+
+# build
+dist/
+.next/
+.turbo/
+out/
+build/
+
+# ambiente
+.env
+.env.*.local
+
+# test / coverage
+coverage/
+
+# log
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor / os
+.DS_Store
+*.swp
+
+# IDE (JetBrains) — configurazione locale, non versionata
+.idea/
