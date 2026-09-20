@@ -15,7 +15,9 @@
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
-    "generate": "drizzle-kit generate"
+    "generate": "drizzle-kit generate",
+    "backup:crea": "tsx src/backup.ts",
+    "backup:verifica": "tsx src/verifica-backup.ts"
   },
   "dependencies": {
     "@gestilab/shared": "workspace:*",

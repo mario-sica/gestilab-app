@@ -3,6 +3,10 @@
 
 FROM node:22-alpine AS deps
 RUN corepack enable
+# postgresql16-client: pg_dump/pg_restore/createdb/dropdb per gli script di
+# backup (task 0.10, packages/db/src/backup.ts), non per l'app stessa — che
+# parla con Postgres solo via il driver "postgres" (packages/db/src/client.ts).
+RUN apk add --no-cache postgresql16-client
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/package.json
@@ -24,6 +28,7 @@ RUN pnpm --filter @gestilab/api build
 # passare a servire solo JS compilato.
 FROM node:22-alpine AS runner
 RUN corepack enable
+RUN apk add --no-cache postgresql16-client
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
