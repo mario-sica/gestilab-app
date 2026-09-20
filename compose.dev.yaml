@@ -67,6 +67,40 @@ services:
     healthcheck:
       start_period: 90s
 
+  # Servizio del repository separato gestilab-auth-service (privato):
+  # "pnpm dev" normale non lo tocca, così chi clona solo questo repository
+  # pubblico non ha bisogno di accesso a quello privato. Va avviato a parte
+  # con "pnpm dev:auth", dopo aver clonato gestilab-auth-service come
+  # cartella sorella (../gestilab-auth-service) e risolto il suo submodule
+  # (vedi il documento di riferimento, sezione sui submodule).
+  auth:
+    profiles: ["auth"]
+    build:
+      context: ../gestilab-auth-service
+      dockerfile: Dockerfile
+      target: deps
+    image: gestilab-auth-dev
+    command:
+      - sh
+      - -c
+      - pnpm install --frozen-lockfile --store-dir /pnpm-store && pnpm dev
+    environment:
+      NODE_ENV: development
+      CI: "true"
+      PORT: 3002
+      HOST: 0.0.0.0
+      DATABASE_URL: ${AUTH_DATABASE_URL}
+      LOG_LEVEL: info
+    ports:
+      - "3002:3002"
+    volumes:
+      - ../gestilab-auth-service:/app:z
+      - pnpm_store_auth:/pnpm-store
+      - nm_auth_root:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     # 5433 sull'host: la 5432 di default risultava già occupata da un
     # PostgreSQL nativo su questa macchina. Internamente il container resta
@@ -120,3 +154,5 @@ volumes:
   nm_api_api:
   nm_api_shared:
   nm_api_db:
+  pnpm_store_auth:
+  nm_auth_root:

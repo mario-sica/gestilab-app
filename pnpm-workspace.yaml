@@ -1,7 +1,15 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # gestilab-auth-service (repository separato, privato — submodule
+  # pinnato a un tag): solo il pacchetto in sé, non un glob su vendor/*,
+  # per non includere anche il SUO submodule interno
+  # (vendor/gestilab-auth-service/vendor/gestilab-app), che avrebbe pacchetti
+  # con lo stesso nome (@gestilab/db, @gestilab/shared) di quelli reali qui
+  # sopra — un conflitto di nomi nello stesso workspace pnpm.
+  - "vendor/gestilab-auth-service"
 allowBuilds:
+  argon2: true
   esbuild: true
   unrs-resolver: true
 # postcss@8.4.31 (vulnerabilità alta, GHSA-6g55-p6wh-862q e GHSA-r28c-9q8g-f849)

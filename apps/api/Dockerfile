@@ -13,6 +13,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY vendor/gestilab-auth-service/package.json vendor/gestilab-auth-service/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
@@ -35,10 +36,16 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY vendor/gestilab-auth-service/package.json vendor/gestilab-auth-service/package.json
 RUN pnpm install --prod --frozen-lockfile --filter @gestilab/api...
 COPY --from=build /app/packages/shared/src ./packages/shared/src
 COPY --from=build /app/packages/db/src ./packages/db/src
 COPY --from=build /app/apps/api/src ./apps/api/src
+# gestilab-auth-service/schema è sorgente TS eseguito via tsx (stesso motivo
+# di packages/shared/db sopra): il link in node_modules punta qui, va
+# popolato esplicitamente perché questo stage riparte da un'immagine pulita
+# e "COPY . ." non viene mai eseguito qui.
+COPY --from=build /app/vendor/gestilab-auth-service/src ./vendor/gestilab-auth-service/src
 USER node
 EXPOSE 3001
 CMD ["pnpm", "--filter", "@gestilab/api", "exec", "tsx", "src/server.ts"]

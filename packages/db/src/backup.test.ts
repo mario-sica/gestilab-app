@@ -1,12 +1,9 @@
-import { existsSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { eq } from 'drizzle-orm';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { creaBackup, eliminaBackupScaduti } from './backup.js';
-import { creaClient } from './client.js';
-import { istituti } from './schema/istituti.js';
+import { creaBackup, eliminaBackupScaduti, percorsoConteggi } from './backup.js';
 import { verificaBackup } from './verifica-backup.js';
 
 // Integrazione: richiede il servizio "db" del profilo dev in esecuzione,
@@ -28,10 +25,10 @@ afterEach(() => {
 });
 
 describe('creaBackup', () => {
-  it('crea un file .dump nella cartella indicata', () => {
+  it('crea un file .dump nella cartella indicata', async () => {
     cartella = mkdtempSync(path.join(tmpdir(), 'gestilab-backup-'));
 
-    const file = creaBackup(cartella, migrateUrl, 7);
+    const file = await creaBackup(cartella, migrateUrl, 7);
 
     expect(file).toMatch(/^gestilab_.*\.dump$/);
     expect(existsSync(path.join(cartella, file))).toBe(true);
@@ -60,7 +57,7 @@ describe('eliminaBackupScaduti', () => {
 describe('verificaBackup', () => {
   it('un backup appena creato si ripristina con lo stesso conteggio righe ovunque', async () => {
     cartella = mkdtempSync(path.join(tmpdir(), 'gestilab-backup-'));
-    creaBackup(cartella, migrateUrl, 7);
+    await creaBackup(cartella, migrateUrl, 7);
 
     const risultato = await verificaBackup(cartella, migrateUrl);
 
@@ -68,31 +65,22 @@ describe('verificaBackup', () => {
     expect(risultato.righePerTabella.length).toBeGreaterThan(0);
   }, 30_000);
 
-  it('rileva davvero un conteggio diverso: un istituto aggiunto dopo il backup non è nel ripristino', async () => {
+  it('rileva davvero un conteggio diverso: un conteggio salvato manomesso non corrisponde al ripristino', async () => {
     cartella = mkdtempSync(path.join(tmpdir(), 'gestilab-backup-'));
-    creaBackup(cartella, migrateUrl, 7);
+    const file = await creaBackup(cartella, migrateUrl, 7);
 
-    const db = creaClient(migrateUrl);
-    const [inserito] = await db
-      .insert(istituti)
-      .values({
-        slug: 'verifica-backup-temp',
-        codiceMeccanografico: 'VERIFICA-BACKUP-TEMP',
-        denominazione: 'Istituto temporaneo per il test di verifica backup',
-        tipologia: 'liceo',
-      })
-      .returning({ id: istituti.id });
+    // Manomette il conteggio salvato al momento del dump (non il database
+    // live: dopo il fix, verificaBackup non lo interroga più — confronta il
+    // ripristino solo con quanto registrato allora, vedi verifica-backup.ts).
+    const percorso = percorsoConteggi(path.join(cartella, file));
+    const conteggi = JSON.parse(readFileSync(percorso, 'utf8')) as Record<string, number>;
+    conteggi.istituti = (conteggi.istituti ?? 0) + 1;
+    writeFileSync(percorso, JSON.stringify(conteggi, null, 2));
 
-    try {
-      const risultato = await verificaBackup(cartella, migrateUrl);
+    const risultato = await verificaBackup(cartella, migrateUrl);
 
-      expect(risultato.successo).toBe(false);
-      const riga = risultato.righePerTabella.find((r) => r.tabella === 'istituti');
-      expect(riga?.trovate).toBe((riga?.attese ?? 0) - 1);
-    } finally {
-      if (inserito) {
-        await db.delete(istituti).where(eq(istituti.id, inserito.id));
-      }
-    }
+    expect(risultato.successo).toBe(false);
+    const riga = risultato.righePerTabella.find((r) => r.tabella === 'istituti');
+    expect(riga?.trovate).toBe((riga?.attese ?? 0) - 1);
   }, 30_000);
 });

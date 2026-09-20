@@ -1,7 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
+
+import { percorsoConteggi } from './backup.js';
 
 const DB_VERIFICA = 'gestilab_verifica_backup';
 
@@ -58,13 +60,19 @@ export interface RisultatoVerifica {
 
 /**
  * Ripristina l'ultimo backup su un database temporaneo e confronta il
- * conteggio righe di ogni tabella con l'originale (docs/06-sicurezza-gdpr.md
- * § 2.10: "un backup mai ripristinato non è un backup"). Il database
+ * conteggio righe di ogni tabella con quello registrato al momento del
+ * backup (docs/06-sicurezza-gdpr.md § 2.10: "un backup mai ripristinato
+ * non è un backup"). Confrontato con i conteggi salvati da creaBackup, non
+ * con una nuova query al database originale: quest'ultimo può essere
+ * legittimamente cambiato nel frattempo (nuove scritture reali, o — nei
+ * test — altre suite che scrivono nello stesso database condiviso in
+ * parallelo) senza che questo sia un problema del backup. Il database
  * temporaneo è sempre eliminato al termine, successo o fallimento.
  */
 export async function verificaBackup(cartella: string, migrateUrl: string): Promise<RisultatoVerifica> {
   const dump = ultimoBackup(cartella);
   const urlVerifica = urlConDatabase(migrateUrl, DB_VERIFICA);
+  const originali = new Map(Object.entries(JSON.parse(readFileSync(percorsoConteggi(dump), 'utf8')) as Record<string, number>));
 
   eseguiPsql(migrateUrl, `DROP DATABASE IF EXISTS ${quotaIdentificatore(DB_VERIFICA)}`);
   eseguiPsql(migrateUrl, `CREATE DATABASE ${quotaIdentificatore(DB_VERIFICA)}`);
@@ -72,10 +80,7 @@ export async function verificaBackup(cartella: string, migrateUrl: string): Prom
   try {
     execFileSync('pg_restore', ['-d', urlVerifica, dump], { stdio: 'inherit' });
 
-    const [originali, ripristinati] = await Promise.all([
-      conteggiPerTabella(migrateUrl),
-      conteggiPerTabella(urlVerifica),
-    ]);
+    const ripristinati = await conteggiPerTabella(urlVerifica);
 
     const tabelle = [...new Set([...originali.keys(), ...ripristinati.keys()])].sort();
     const righePerTabella = tabelle.map((tabella) => ({

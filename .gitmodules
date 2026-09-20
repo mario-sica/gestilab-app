@@ -1,0 +1,3 @@
+[submodule "vendor/gestilab-auth-service"]
+	path = vendor/gestilab-auth-service
+	url = git@github.com:mario-sica/gestilab-auth-service.git
