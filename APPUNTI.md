@@ -325,3 +325,70 @@ lint`/`typecheck`/`test`/`build` puliti su tutto il monorepo.
   in `seed.ts` per non scrivere `gestilab.test` a mano nelle email finte
   (la regola ESLint anti-dominio l'ha bloccato al primo tentativo — ha
   funzionato).
+
+# Dubbio aperto — lista slug riservati (BLOCCA il task 0.6, in attesa di decisione)
+
+**Non ho deciso io, non ho ancora scritto codice che usa questa lista.**
+Serve per il task 0.6 (middleware Next.js: un host il cui primo pezzo prima
+di `.gestilab.test`/`.gestilab.it` è in questa lista non è un tenant valido,
+va gestito diversamente da un 404-tenant-inesistente).
+
+## I due punti che non concordano
+
+`docs/01-dominio.md`, sezione `istituti`, colonna `slug`:
+> `[a-z0-9-]{3,40}`, immutabile dopo attivazione. Riservati: www, app,
+> console, api, static, admin, status, docs, mail
+
+`docs/02-architettura.md`, sezione "Indirizzi":
+> Slug riservati (identici nei due ambienti): www, app, console, api,
+> static, admin, status, docs, mail, **cdn**
+
+Differenza: **cdn**, presente solo nella seconda lista.
+
+## Perché non ho scelto da solo
+
+`docs/CLAUDE.md` dice esplicitamente: "Non dedurre il modello dati dal
+codice esistente se il documento dice altro: il documento vince" e nella
+tabella dei documenti assegna `01-dominio.md` a "qualsiasi modifica a
+schema, entità, migrazioni, regole di dominio" — sulla carta la lista
+riservata (essendo un vincolo sulla colonna `slug` di `istituti`, quindi
+schema) dovrebbe seguire `01`. Ma:
+- `02-architettura.md` è il documento esplicitamente dedicato a "Docker,
+  tenancy, routing, deploy" — e la risoluzione del tenant da host (di cui
+  la lista riservata fa parte operativamente) è descritta lì, non in `01`.
+- `02` dice "identici nei due ambienti" (dev e prod), un dettaglio di
+  attenzione che `01` non ripete — potrebbe indicare che chi ha scritto `02`
+  ci ha pensato con più cura in quel momento, o semplicemente che l'ha
+  scritto in un secondo momento senza riallineare `01`.
+- Non so se manchi `cdn` per dimenticanza in `01`, o se sia stato tolto
+  apposta da `02` in un secondo momento (es. perché si è deciso di non
+  usare più un sottodominio `cdn` dedicato) e `02` non sia stato
+  aggiornato di conseguenza.
+
+Non ho elementi per stabilire quale dei due è "il vecchio" e quale "il
+nuovo": potrebbero essere stati scritti in ordine diverso da quello in cui
+appaiono numerati, o modificati in momenti diversi.
+
+## Cosa cambia in pratica a seconda della scelta
+
+Se il middleware userà **solo la lista di 01** (9 slug, senza cdn):
+un ipotetico istituto che scegliesse lo slug `cdn` verrebbe accettato come
+tenant valido — `cdn.gestilab.test` risolverebbe a un istituto vero, non a
+un servizio riservato.
+
+Se userà **l'unione con cdn** (10 slug): coerente con l'intenzione dichiarata
+in `02` di riservare "cdn" per un futuro uso infrastrutturale (CDN per
+assets statici), ma introduce nello schema/middleware un vincolo che `01`
+(il documento dichiarato autoritativo per lo schema) non menziona.
+
+## Le tre strade, senza che io ne scelga una
+
+1. Seguire solo `01` alla lettera (coerente con la gerarchia dichiarata in
+   `docs/CLAUDE.md`), e considerare `cdn` in `02` un refuso da correggere lì.
+2. Seguire l'unione (10 slug, con cdn), e considerare la dimenticanza in
+   `01` da correggere lì.
+3. Chiederti se "cdn" è effettivamente un sottodominio che prevedi di usare
+   per qualche motivo (assets statici, CDN esterna in futuro) — se la
+   risposta è "mai" la domanda si risolve da sola togliendolo da `02`.
+
+Fermo qui il task 0.6 finché non mi dici come vuoi che proceda.
