@@ -1,0 +1,45 @@
+# Profilo local-prod: dimostra la prontezza alla produzione senza spendere
+# nulla. Identico a prod tranne l'emittente del certificato (qui mkcert, in
+# prod Let's Encrypt DNS-01) e il dominio di base. Immagini buildate (nessun
+# bind mount, nessun target "deps"), un solo punto d'ingresso pubblicato
+# sull'host: Traefik su 80/443. Vedi docker/traefik/certs/README.md per il
+# setup del certificato, obbligatorio prima di avviare questo profilo.
+
+services:
+  proxy:
+    image: traefik:v3
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro,z
+      - ./docker/traefik/dynamic:/etc/traefik/dynamic:ro,z
+      - ./docker/traefik/certs:/etc/traefik/certs:ro,z
+      # necessario al provider Docker di Traefik per scoprire i container
+      # tramite le loro label; sola lettura.
+      - /var/run/docker.sock:/var/run/docker.sock:ro,z
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      web:
+        condition: service_healthy
+
+  web:
+    environment:
+      BASE_DOMAIN: gestilab.test
+    labels:
+      - traefik.enable=true
+      # Traefik v3: Host() accetta un solo parametro per chiamata, a
+      # differenza di v2; più host si combinano con ||.
+      - traefik.http.routers.web.rule=Host(`dellaquila.gestilab.test`) || Host(`demo.gestilab.test`) || Host(`app.gestilab.test`) || Host(`console.gestilab.test`)
+      - traefik.http.routers.web.entrypoints=websecure
+      - traefik.http.routers.web.tls=true
+      - traefik.http.services.web.loadbalancer.server.port=3000
+
+  api:
+    environment:
+      BASE_DOMAIN: gestilab.test

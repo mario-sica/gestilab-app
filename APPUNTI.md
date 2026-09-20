@@ -1,84 +1,109 @@
-# Appunti — task 0.2 (Docker Compose)
+# Appunti — task 0.2b (profilo local-prod: Traefik + mkcert)
 
-## Stato: FATTO — stack completo, tutti i container healthy
+## Stato: FATTO — tutti gli 8 container healthy, HTTPS verificato
 
-`docker compose -f compose.yaml -f compose.dev.yaml up -d --build` porta su
-tutti e 8 i servizi in stato `healthy` in circa 20 secondi (a immagini già
-buildate/scaricate). Verificato anche con un ciclo `down` → `up` completo
-(idempotente, dati preservati nei volumi nominati).
+`pnpm local-prod` (= `docker compose -f compose.yaml -f compose.local-prod.yaml
+up`) porta su tutto lo stack con immagini buildate (nessun bind mount, nessun
+target `deps`). Verificato con un ciclo `down` → `up --build` completo.
 
 ```
-NAME                      SERVICE     STATUS
-gestilab-app-adminer-1    adminer     healthy
-gestilab-app-api-1        api         healthy
-gestilab-app-db-1         db          healthy
-gestilab-app-glitchtip-1  glitchtip   healthy
-gestilab-app-mailpit-1    mailpit     healthy
-gestilab-app-redis-1      redis       healthy
-gestilab-app-storage-1    storage     healthy
-gestilab-app-web-1        web         healthy
+NAME                      SERVICE     STATUS                 PORTS
+gestilab-app-api-1        api         healthy                3001/tcp (interno)
+gestilab-app-db-1         db          healthy                5432/tcp (interno)
+gestilab-app-glitchtip-1  glitchtip   healthy                8000/tcp (interno)
+gestilab-app-mailpit-1    mailpit     healthy                1025,1110,8025/tcp (interno)
+gestilab-app-proxy-1      proxy       healthy                0.0.0.0:80, 0.0.0.0:443
+gestilab-app-redis-1      redis       healthy                6379/tcp (interno)
+gestilab-app-storage-1    storage     healthy                9000/tcp (interno)
+gestilab-app-web-1        web         healthy                3000/tcp (interno)
 ```
 
-`http://localhost:3000` → `200`. `http://localhost:3001/api/v1/salute` →
-`200`, body `{"stato":"ok"}`.
+Solo `proxy` pubblica porte sull'host (80/443): tutti gli altri servizi sono
+raggiungibili solo sulla rete Docker interna, come richiesto ("nessuna porta
+esposta oltre 80 e 443").
 
-## Blocco iniziale (risolto): Docker Desktop corrotto, non il compose
+`https://dellaquila.gestilab.test` → `200`, certificato verificato senza
+warning (niente `curl -k`): emesso da mkcert, riconosciuto perché la CA
+locale è installata nel trust store di sistema (`mkcert -install`).
+`http://dellaquila.gestilab.test` → `301` verso l'equivalente HTTPS.
+Stessa verifica ripetuta con successo su `demo.`, `app.`, `console.` —
+l'intero host table documentato in `docs/02-architettura.md`.
 
-La prima sessione di lavoro su questo task si era fermata perché **il motore
-di Docker Desktop era danneggiato**: ogni pull di un'immagine non banale
-falliva con `unexpected EOF` seguito da crash della VM QEMU
-(`qemu: process terminated unexpectedly: signal: aborted`), e dopo
-l'aggiornamento (4.54.0 → 4.91.0, che ha risolto il crash sui pull) restava
-un problema più subdolo: le immagini scaricavano correttamente ma
-**l'esecuzione falliva con `exec format error`** anche su binari amd64
-corretti — corruzione sul disco persistente della VM, non riparabile con un
-riavvio del servizio. Risolto con una pulizia dati completa di Docker Desktop
-(Troubleshoot → Clean/Purge data), eseguita dall'utente dopo mia richiesta
-esplicita (azione distruttiva, cancella tutte le immagini/volumi Docker
-preesistenti sulla macchina — per questo non l'ho eseguita autonomamente).
-Non è mai stato un problema della configurazione di questo repository.
+## Cosa ha richiesto l'intervento dell'utente (sudo)
 
-## Problemi trovati e corretti durante la verifica reale
+Non ho sudo passwordless in questa sessione. L'utente ha eseguito, nell'ordine:
 
-Una volta con un motore Docker sano, l'avvio ha comunque richiesto quattro
-correzioni, tutte a bug miei nei file di configurazione:
+```bash
+sudo dnf install -y mkcert nss-tools
+mkcert -install                 # NON con sudo davanti: aggiorna il trust
+                                 # store dell'utente (browser), non quello
+                                 # di root; mkcert chiede lui la password se
+                                 # deve toccare anche lo store di sistema.
+echo '127.0.0.1 dellaquila.gestilab.test demo.gestilab.test app.gestilab.test console.gestilab.test' | sudo tee -a /etc/hosts
+```
 
-1. **`minio/minio` non esiste più su Docker Hub** (licenza cambiata, immagine
-   rimossa). Corretto: `quay.io/minio/minio`.
-2. **Porta 5432 già occupata** da un PostgreSQL nativo sulla macchina host.
-   Il container `db` resta in ascolto su 5432 internamente; solo la
-   pubblicazione verso l'host in `compose.dev.yaml` è cambiata a `5433:5432`.
-   `DATABASE_URL` non cambia: usa l'hostname Docker `db`, non l'host.
-3. **Healthcheck di `web` e `api` su `http://localhost:...`**: nel container
-   "localhost" risolve prima su `::1`, ma Node in ascolto su `0.0.0.0` non
-   risponde lì (`Connection refused`) — bind IPv4-only. Corretto usando
-   `127.0.0.1` esplicito nei due healthcheck.
-4. **Comandi `command:` di `web`/`api` in `compose.dev.yaml` scritti come
-   scalare YAML ripiegato (`>`) con `sh -c "..."` annidato**: la
-   combinazione produceva un comando malformato (`sh: --store-dir: not
-   found`). Riscritti come lista YAML esplicita
-   (`["sh", "-c", "<comando>"]`), che non lascia ambiguità di parsing.
-5. **`command:` di `glitchtip` (migrate + collectstatic + gunicorn a mano)**:
-   falliva su due fronti — `collectstatic` con `PermissionError` (i file
-   statici nell'immagine sono già collezionati, di proprietà di root; l'utente
-   runtime `app` non può riscriverli) e poi `gunicorn: not found` (l'immagine
-   usa Granian, non Gunicorn). Corretto eliminando il `command:` custom e
-   usando `SERVER_ROLE=all_in_one`, la variabile d'ambiente che lo script di
-   avvio ufficiale dell'immagine (`./bin/start.sh`) già supporta per eseguire
-   migrazioni + web + worker in un solo processo — più semplice e corretto
-   del comando scritto a mano.
+Ho generato io il certificato dopo (non serve sudo, solo il binario mkcert e
+la CA già create):
+
+```bash
+mkcert -cert-file docker/traefik/certs/gestilab.test.pem \
+       -key-file docker/traefik/certs/gestilab.test-key.pem \
+       "*.gestilab.test" gestilab.test
+```
+
+I `.pem` non sono versionati (vedi `.gitignore`): sono legati alla CA locale
+di questa macchina. Chi clona il repo deve rigenerarli — istruzioni in
+`docker/traefik/certs/README.md`.
+
+## Bug trovati e corretti durante la verifica reale
+
+Quattro problemi, tutti scoperti solo mettendo davvero in piedi il profilo
+(la build `runner` non era mai stata eseguita end-to-end prima: il profilo
+dev usa lo stage `deps` con bind mount, mai `runner`):
+
+1. **`apps/web/public` non esisteva** (task 0.1 non l'aveva creata: "solo la
+   pagina di default"). Il Dockerfile la copia nello stage `runner` e la
+   build falliva (`"/app/apps/web/public": not found`). Creata la cartella
+   con un `.gitkeep`.
+2. **`apps/api` runner: `Command "tsx" not found`**. Il `CMD` faceva
+   `pnpm exec tsx ...` con `WORKDIR=/app` (radice del monorepo): in un
+   workspace pnpm i binari di un pacchetto vivono nel `node_modules/.bin`
+   di *quel* pacchetto (`apps/api/node_modules/.bin/tsx`), non alla radice.
+   Corretto con `pnpm --filter @gestilab/api exec tsx src/server.ts`, che
+   esegue nel contesto giusto.
+3. **`apps/web` runner: healthcheck sempre `Connection refused` su
+   `127.0.0.1:3000`, pur con server "Ready"**. Causa: Docker imposta di
+   default la variabile d'ambiente `HOSTNAME` (l'id del container, es.
+   `241420cd7378`); il server standalone di Next.js la legge proprio come
+   indirizzo di bind (`process.env.HOSTNAME || '0.0.0.0'`), quindi ascoltava
+   su un hostname irraggiungibile invece che su `0.0.0.0`. Corretto
+   sovrascrivendo esplicitamente `HOSTNAME=0.0.0.0` nell'environment del
+   servizio `web` in `compose.yaml` (si applica a qualunque profilo usi lo
+   stage `runner`, quindi anche al futuro `prod`).
+4. **Traefik: `Host()` con più argomenti rifiutato** — `error while adding
+   rule Host: unexpected number of parameters; got 4, expected one of [1]`.
+   In Traefik v3 (diversamente da v2) `Host()` accetta un solo hostname per
+   chiamata; per più host si combina con `||`. Corretta la label del router
+   in `compose.local-prod.yaml`.
 
 ## Decisioni prese dove la specifica era ambigua
 
-(Le decisioni su `apps/api`/tsx, GlitchTip come servizio singolo, `adminer`
-solo in dev, e i volumi `node_modules` per servizio sono le stesse già
-motivate nella prima stesura di questo file: vedi commit precedente
-"chore: docker compose setup (task 0.2)". Qui aggiungo solo quanto emerso
-dalla verifica end-to-end.)
-
-- **Database `glitchtip` separato**: confermato creato correttamente
-  dall'init script (`docker/postgres/init/01-glitchtip-db.sql`), verificato
-  con `\l` in psql dentro il container `db`.
-- **`GLITCHTIP_EMBED_WORKER` non impostato esplicitamente**: `SERVER_ROLE:
-  all_in_one` lo forza comunque a `true` dentro lo script di avvio
-  ufficiale, quindi non serve duplicarlo.
+- **Routing**: solo `web` è esposto da Traefik, sui quattro host documentati
+  in `docs/02-architettura.md` (dellaquila/demo/app/console.gestilab.test).
+  `api` resta raggiungibile solo sulla rete Docker interna: l'architettura
+  descrive `/api/*` come proxato dal frontend Next.js verso l'API (non
+  ancora implementato, task successivo), non come un host Traefik a parte.
+- **Nessuna route per mailpit/minio/glitchtip in local-prod**: coerente con
+  "nessuna porta esposta oltre 80 e 443". Per ispezionarli in questo
+  profilo serve `docker compose exec`/`logs`, non il browser — comportamento
+  corretto per un profilo che imita la produzione.
+- **CA e certificato non versionati**: solo `docker/traefik/certs/README.md`
+  è in git: istruzioni, non segreti. `docker/traefik/certs/*.pem` è in
+  `.gitignore`.
+- **`/etc/hosts` invece di `dnsmasq`**: la macchina ha `dnsmasq` installato
+  ma non attivo/integrato con NetworkManager; configurarlo come resolver di
+  sistema è un cambiamento più invasivo (rischio di interferire con la
+  risoluzione DNS normale) per un guadagno minimo dato che i quattro host
+  serviti oggi sono pochi e noti. `/etc/hosts` non supporta wildcard: un
+  futuro slug di tenant andrà aggiunto a mano finché non si passa a
+  `dnsmasq` (opzione lasciata nel README dei certificati).
