@@ -158,3 +158,80 @@ precedente. Differenze, tutte in linea con quanto richiesto da
 rimanda ai "Prerequisiti a spesa" del backlog: il provider DNS scelto
 richiederà anche le proprie variabili di autenticazione (token/chiave API),
 da aggiungere quando si sceglierà — non prima, e mai versionate.
+
+# Task 0.3 — Drizzle: connessione, migrazioni, ruolo app_user, withTenant
+
+## Stato: FATTO
+
+Migrazione applicata nel container `api` (`pnpm db:migrate`), ruoli
+verificati con `psql`, test `withTenant` verde, `pnpm lint`/`typecheck`/
+`test`/`build` puliti su tutto il monorepo.
+
+## Decisioni prese
+
+- **Due ruoli, non uno**, seguendo alla lettera l'esempio SQL di
+  `docs/02-architettura.md`: `app_user` (`NOLOGIN`, porta le policy RLS e i
+  privilegi) e un nuovo `gestilab_app` (`LOGIN`, connessione applicativa,
+  membro di `app_user`). Prima di questo task `DATABASE_URL` puntava al
+  ruolo owner (`gestilab`, lo stesso di `POSTGRES_USER`) — coerente col
+  commento già scritto nel task 0.1 ("utente applicativo, non owner") ma
+  contraddetto dal valore. Corretto: `DATABASE_URL` ora usa `gestilab_app`;
+  nuova `DATABASE_MIGRATE_URL` (ruolo owner) per le sole migrazioni, mai
+  usata da codice applicativo (regola non negoziabile #1 di `docs/CLAUDE.md`).
+- **`ALTER DEFAULT PRIVILEGES`** invece di un `GRANT` per tabella: le
+  tabelle di dominio che arriveranno dal task 0.4 (create dal ruolo owner)
+  concederanno i privilegi ad `app_user` automaticamente, senza dover
+  ricordare un GRANT a ogni nuova migrazione.
+- **Password di `gestilab_app` non nella migrazione SQL** (sarebbe un
+  segreto versionato): la migrazione crea il ruolo senza password;
+  `src/migrate.ts`, dopo aver applicato le migrazioni con la connessione
+  owner, la imposta leggendola da `DATABASE_URL` con
+  `ALTER ROLE ... WITH PASSWORD`. Postgres rifiuta un parametro bind lì
+  (errore di sintassi: la clausola PASSWORD vuole un letterale, non un
+  `$1`) — costruita a mano con quoting sicuro (username/password vengono
+  da `.env`, non da input esterno, ma quotati comunque per correttezza).
+- **`withTenant` testato senza tabelle di dominio** (non esistono ancora,
+  arrivano con la 0.4): il test verifica il contratto — dentro la
+  transazione `current_user = app_user` e `app.tenant_id` impostato,
+  fuori nessuno dei due trapela — con una `SELECT current_setting(...)`,
+  non con una tabella reale. Quando la 0.4 aggiungerà `asset` e le prime
+  policy RLS, quello sarà il posto giusto per un test end-to-end con dati
+  veri.
+- **`packages/db/src/client.ts` non legge `process.env`**: la connessione
+  la passa chi chiama (`migrate.ts`, i test, in futuro `apps/api`), dopo
+  averla validata. Tiene il pacchetto testabile senza un ambiente globale
+  implicito, e `DATABASE_MIGRATE_URL` resta fuori dallo schema Zod
+  condiviso di `packages/shared/env.ts` (lo leggono solo le migrazioni, non
+  ha senso richiederlo anche a `apps/web`, che non lo usa).
+- **`apps/api` non usa ancora `packages/db`**: nessun endpoint di dominio in
+  questo task, solo connessione/migrazioni/helper. Il wiring arriva con le
+  prime rotte di dominio.
+
+## Due bug collaterali trovati e corretti in `compose.dev.yaml`
+
+1. **`CI=true` mancante**: appena `packages/db` ha avuto nuove dipendenze
+   (drizzle-orm, postgres, drizzle-kit, tsx), il container `api` è uscito
+   con `[ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY]` — pnpm chiede
+   conferma interattiva prima di modificare `node_modules` quando il
+   lockfile cambia, e nel container non c'è una TTY per rispondere.
+   Aggiunta `CI: "true"` (convenzione che pnpm stesso documenta) alle
+   `environment:` di `web` e `api`.
+2. **Il container `api` non installava `packages/db`**: `pnpm db:migrate`
+   esegue `pnpm --filter @gestilab/db run migrate` *dentro* il container
+   `api` (così da `docs/CLAUDE.md`), ma il comando d'avvio di `api` in dev
+   installava solo `--filter @gestilab/api...` (sé stesso + `packages/shared`,
+   non `packages/db`) — `tsx: not found`. Aggiunto anche
+   `--filter @gestilab/db...` all'install del container `api`.
+
+## Altro
+
+- **`turbo.json`**: il task `test` non passava `DATABASE_URL` al processo
+  (Turborepo filtra le variabili d'ambiente per default, a meno di
+  dichiararle esplicitamente) — `pnpm test` dalla radice falliva anche con
+  `DATABASE_URL` esportata nella shell. Aggiunto `"env": ["DATABASE_URL"]`
+  al task `test` in `turbo.json`.
+- Il test di `packages/db` è di integrazione: richiede il servizio `db` del
+  profilo dev raggiungibile su `DATABASE_URL`. Se lanciato a stack dev
+  spento, fallisce con un errore di connessione chiaro — comportamento
+  atteso, non un bug (`docs/04-convenzioni-codice.md`: "Integrazione |
+  Vitest + Postgres in container").
