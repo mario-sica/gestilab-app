@@ -98,6 +98,7 @@ La pipeline fallisce se: coverage dei moduli di dominio < 70%, un endpoint senza
 - Non aggiungere ORM, state manager o librerie UI alternative senza discussione.
 - Non introdurre `console.log` in codice di produzione: logger strutturato.
 - Non scrivere migrazioni distruttive in un solo passo (prima aggiungi, poi migra i dati, poi rimuovi in una release successiva).
+- Non modificare mai a mano un file di migrazione già generato da `drizzle-kit` (nemmeno subito dopo averlo generato, prima di applicarlo): se serve SQL che Drizzle non emette da solo (es. `FORCE ROW LEVEL SECURITY`), va creata una migrazione aggiuntiva dedicata con `drizzle-kit generate --custom`, mai un'edit sul file esistente. Il registro delle migrazioni (`__drizzle_migrations`) traccia un hash del contenuto di ogni file: un file modificato dopo essere stato letto (o applicato) produce un disallineamento tra ciò che il registro dice essere girato e ciò che è realmente sul disco.
 - Non mettere logica di business nelle route handler di Next.js: il frontend non è la fonte di verità.
 - Non salvare dati personali nei log, nemmeno per debug.
 - Non scrivere un dominio, un URL di servizio o una porta direttamente nel codice.
