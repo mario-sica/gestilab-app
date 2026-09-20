@@ -29,8 +29,10 @@ ENV NODE_ENV=production
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY packages/db/package.json packages/db/package.json
 RUN pnpm install --prod --frozen-lockfile --filter @gestilab/api...
 COPY --from=build /app/packages/shared/src ./packages/shared/src
+COPY --from=build /app/packages/db/src ./packages/db/src
 COPY --from=build /app/apps/api/src ./apps/api/src
 USER node
 EXPOSE 3001

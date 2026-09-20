@@ -1,13 +1,10 @@
-import Fastify from 'fastify';
 import { leggiEnv } from '@gestilab/shared';
 
-import { rotteSalute } from './moduli/salute/rotte.js';
+import { costruisciApp } from './app.js';
 
 async function avvia(): Promise<void> {
   const env = leggiEnv();
-  const app = Fastify({ logger: { level: env.LOG_LEVEL } });
-
-  await app.register(rotteSalute);
+  const app = await costruisciApp(env);
 
   await app.listen({ port: env.API_PORT, host: env.API_HOST });
 }
