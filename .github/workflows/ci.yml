@@ -64,6 +64,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # pg_dump/pg_restore/psql: usati da packages/db/src/backup.test.ts
+      # (task 0.10), che gira qui direttamente sul runner, non dentro
+      # un'immagine Docker (quella ha già i client via apps/api/Dockerfile).
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+
       - run: pnpm lint
 
       - run: pnpm typecheck

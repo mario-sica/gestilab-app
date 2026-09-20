@@ -22,6 +22,9 @@ build/
 # certificati TLS locali (mkcert), specifici della macchina
 docker/traefik/certs/*.pem
 
+# dump di backup del database: dati reali, mai versionati
+backups/*.dump
+
 # test / coverage
 coverage/
 

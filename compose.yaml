@@ -37,6 +37,16 @@ services:
       - .env
     environment:
       API_HOST: 0.0.0.0
+    volumes:
+      # Bind mount, non volume nominato: un backup nello stesso volume dei
+      # dati che protegge sparirebbe insieme a loro con "docker compose down
+      # -v" (docs/02-architettura.md dice "volumi nominati, mai bind mount"
+      # per i DATI applicativi — pgdata, miniodata — non per i backup, che
+      # hanno l'esigenza opposta). In dev è ridondante con ".:/app" del
+      # profilo (già include questo path), ma è l'unico modo per farlo
+      # sopravvivere in local-prod/prod, dove non c'è alcun bind mount del
+      # codice sorgente.
+      - ./backups:/app/backups:z
     healthcheck:
       # 127.0.0.1 esplicito: stesso motivo del servizio web.
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3001/api/v1/salute"]
