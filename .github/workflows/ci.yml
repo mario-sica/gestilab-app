@@ -94,7 +94,33 @@ jobs:
       - run: pnpm --filter @gestilab/db run migrate
       - run: pnpm --filter @gestilab/db run seed
 
-      - run: pnpm test
+      # gestilab-auth-service è ora un membro del workspace (vendor/): le sue
+      # suite (src/moduli/accesso/*.test.ts, src/app.test.ts) leggono/scrivono
+      # sulla tabella "sessioni", che le sue migrazioni creano — mai quelle
+      # di @gestilab/db. Stessa DATABASE_MIGRATE_URL (stesso database, ruolo
+      # owner): la migrazione 0000 di questo servizio richiede che il ruolo
+      # "app_user" esista già, quindi va dopo "pnpm --filter @gestilab/db run
+      # migrate", non prima.
+      #
+      # DATABASE_URL qui è quella di gestilab_auth, non quella globale
+      # (gestilab_app, usata da @gestilab/api e @gestilab/web): src/db/
+      # migrate.ts di questo servizio allinea la password del ruolo
+      # gestilab_auth a quella letta da DATABASE_URL — con quella globale
+      # imposterebbe la password del ruolo sbagliato, e le sue suite (che
+      # si connettono come gestilab_auth) fallirebbero il login. Mai lo
+      # stesso ruolo per due servizi diversi, anche sullo stesso database
+      # (vedi il documento di riferimento, sezione sul servizio auth).
+      - run: pnpm --filter gestilab-auth-service run migrate
+        env:
+          DATABASE_URL: postgres://gestilab_auth:gestilab_auth_ci_password@localhost:5432/gestilab
+
+      # Esclude gestilab-auth-service: le sue suite girano nello step
+      # successivo, con la DATABASE_URL corretta per il suo ruolo.
+      - run: pnpm exec turbo run test --filter='!gestilab-auth-service'
+
+      - run: pnpm --filter gestilab-auth-service test
+        env:
+          DATABASE_URL: postgres://gestilab_auth:gestilab_auth_ci_password@localhost:5432/gestilab
 
       # docs/06-sicurezza-gdpr.md § 2.9: una vulnerabilità "alta" blocca il
       # merge. "moderate" e sotto non bloccano la pipeline.
