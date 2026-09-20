@@ -51,7 +51,15 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
+      # gestilab-auth-service (vendor/gestilab-auth-service) è un submodule
+      # di un repository privato: il GITHUB_TOKEN di default non vi ha
+      # accesso. ssh-key qui carica una deploy key sola lettura (secret
+      # AUTH_SERVICE_DEPLOY_KEY) prima del checkout, così "submodules:
+      # recursive" può clonarlo.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -90,7 +98,13 @@ jobs:
     needs: verifica
     runs-on: ubuntu-latest
     steps:
+      # Stessa deploy key del job "verifica": entrambi i Dockerfile fanno
+      # "COPY . ." e "pnpm install" con l'intero workspace, incluso
+      # vendor/gestilab-auth-service.
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
 
       - uses: docker/setup-buildx-action@v3
 
