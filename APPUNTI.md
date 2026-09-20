@@ -1,51 +1,84 @@
-# Appunti — task 0.1 (scheletro monorepo)
+# Appunti — task 0.2 (Docker Compose)
 
-## Dipendenze
+## Stato: FATTO — stack completo, tutti i container healthy
 
-Nessuna dipendenza fuori dalla lista consentita è stata installata. Tutto quello
-che serviva (Zod per la validazione env, `@types/*`, ecc.) rientra nell'elenco
-fornito.
+`docker compose -f compose.yaml -f compose.dev.yaml up -d --build` porta su
+tutti e 8 i servizi in stato `healthy` in circa 20 secondi (a immagini già
+buildate/scaricate). Verificato anche con un ciclo `down` → `up` completo
+(idempotente, dati preservati nei volumi nominati).
 
-## Versioni fissate esplicitamente (non "latest")
+```
+NAME                      SERVICE     STATUS
+gestilab-app-adminer-1    adminer     healthy
+gestilab-app-api-1        api         healthy
+gestilab-app-db-1         db          healthy
+gestilab-app-glitchtip-1  glitchtip   healthy
+gestilab-app-mailpit-1    mailpit     healthy
+gestilab-app-redis-1      redis       healthy
+gestilab-app-storage-1    storage     healthy
+gestilab-app-web-1        web         healthy
+```
 
-Al primo `pnpm add` senza versione, pnpm ha risolto alcuni pacchetti su major
-troppo recenti o incompatibili tra loro. Per ottenere una toolchain coerente
-ho fissato:
+`http://localhost:3000` → `200`. `http://localhost:3001/api/v1/salute` →
+`200`, body `{"stato":"ok"}`.
 
-- **`typescript@6.0.3`** invece della 7.x: la 7.x è il nuovo compilatore nativo
-  e `@typescript-eslint` non la supporta ancora ("typescript-eslint does not
-  support TS 7.0"). La 6.x è la linea classica, quella con cui l'intero
-  ecosistema (eslint-plugin, Next) è testato.
-- **`eslint@8.57.0`** invece della 10.x: dalla v9 ESLint richiede di default
-  `eslint.config.*` (flat config) e la 10.x non supporta più `.eslintrc.*`.
-  `eslint-config-next@15.5.25` dichiara come peer solo `^7 || ^8 || ^9`, quindi
-  non è comunque compatibile con la 10. Ho scelto la 8.x (LTS di fatto, anche
-  se npm la segnala "no longer supported") per restare su config classica
-  `.eslintrc.json`, coerente con l'elenco dipendenze consentito (niente
-  `@eslint/js`, niente `typescript-eslint` meta-package, niente `globals`, che
-  servirebbero per una flat config pulita).
-- **`next@15.5.25` / `react@19.3.0` / `react-dom@19.3.0` /
-  `eslint-config-next@15.5.25`**: "latest" risolveva a Next 16. La richiesta
-  era esplicitamente Next.js 15, quindi ho pinnato all'ultima patch della 15.
-- **`tailwindcss@3.4.19`** (non 4.x): la lista dipendenze consentite include
-  `tailwindcss`, `postcss`, `autoprefixer` come pacchetti separati, schema
-  tipico di Tailwind v3. Tailwind v4 richiede invece `@tailwindcss/postcss`
-  (pacchetto non in lista) e cambia il modello di configurazione. Ho quindi
-  usato Tailwind v3 con `postcss.config.mjs` + `tailwind.config.ts` classici.
+## Blocco iniziale (risolto): Docker Desktop corrotto, non il compose
 
-## Nota TypeScript 6/7 e import CSS
+La prima sessione di lavoro su questo task si era fermata perché **il motore
+di Docker Desktop era danneggiato**: ogni pull di un'immagine non banale
+falliva con `unexpected EOF` seguito da crash della VM QEMU
+(`qemu: process terminated unexpectedly: signal: aborted`), e dopo
+l'aggiornamento (4.54.0 → 4.91.0, che ha risolto il crash sui pull) restava
+un problema più subdolo: le immagini scaricavano correttamente ma
+**l'esecuzione falliva con `exec format error`** anche su binari amd64
+corretti — corruzione sul disco persistente della VM, non riparabile con un
+riavvio del servizio. Risolto con una pulizia dati completa di Docker Desktop
+(Troubleshoot → Clean/Purge data), eseguita dall'utente dopo mia richiesta
+esplicita (azione distruttiva, cancella tutte le immagini/volumi Docker
+preesistenti sulla macchina — per questo non l'ho eseguita autonomamente).
+Non è mai stato un problema della configurazione di questo repository.
 
-Con `typescript@6.0.3` l'import "副effect" `import './globals.css'` in
-`apps/web/src/app/layout.tsx` falliva con `TS2882` (nessuna dichiarazione di
-modulo per l'estensione `.css`). `next/types/global.d.ts` dichiara solo
-`*.module.css`, non `*.css` semplice. Ho aggiunto `apps/web/global.d.ts` con
-`declare module '*.css';` — pattern standard, non un workaround fragile.
+## Problemi trovati e corretti durante la verifica reale
 
-## Percorso `docs/`
+Una volta con un motore Docker sano, l'avvio ha comunque richiesto quattro
+correzioni, tutte a bug miei nei file di configurazione:
 
-`CLAUDE.md` e il backlog fanno riferimento a una cartella `docs/`, ma nel
-repository la documentazione vive in `gestilab_doc/`. Non ho rinominato nulla:
-ho letto i documenti dal percorso reale e basta. Segnalo la discrepanza perché
-i futuri task che citano `docs/...` andranno letti da `gestilab_doc/...` finché
-qualcuno non allinea il nome (è una modifica strutturale, fuori scope per il
-task 0.1).
+1. **`minio/minio` non esiste più su Docker Hub** (licenza cambiata, immagine
+   rimossa). Corretto: `quay.io/minio/minio`.
+2. **Porta 5432 già occupata** da un PostgreSQL nativo sulla macchina host.
+   Il container `db` resta in ascolto su 5432 internamente; solo la
+   pubblicazione verso l'host in `compose.dev.yaml` è cambiata a `5433:5432`.
+   `DATABASE_URL` non cambia: usa l'hostname Docker `db`, non l'host.
+3. **Healthcheck di `web` e `api` su `http://localhost:...`**: nel container
+   "localhost" risolve prima su `::1`, ma Node in ascolto su `0.0.0.0` non
+   risponde lì (`Connection refused`) — bind IPv4-only. Corretto usando
+   `127.0.0.1` esplicito nei due healthcheck.
+4. **Comandi `command:` di `web`/`api` in `compose.dev.yaml` scritti come
+   scalare YAML ripiegato (`>`) con `sh -c "..."` annidato**: la
+   combinazione produceva un comando malformato (`sh: --store-dir: not
+   found`). Riscritti come lista YAML esplicita
+   (`["sh", "-c", "<comando>"]`), che non lascia ambiguità di parsing.
+5. **`command:` di `glitchtip` (migrate + collectstatic + gunicorn a mano)**:
+   falliva su due fronti — `collectstatic` con `PermissionError` (i file
+   statici nell'immagine sono già collezionati, di proprietà di root; l'utente
+   runtime `app` non può riscriverli) e poi `gunicorn: not found` (l'immagine
+   usa Granian, non Gunicorn). Corretto eliminando il `command:` custom e
+   usando `SERVER_ROLE=all_in_one`, la variabile d'ambiente che lo script di
+   avvio ufficiale dell'immagine (`./bin/start.sh`) già supporta per eseguire
+   migrazioni + web + worker in un solo processo — più semplice e corretto
+   del comando scritto a mano.
+
+## Decisioni prese dove la specifica era ambigua
+
+(Le decisioni su `apps/api`/tsx, GlitchTip come servizio singolo, `adminer`
+solo in dev, e i volumi `node_modules` per servizio sono le stesse già
+motivate nella prima stesura di questo file: vedi commit precedente
+"chore: docker compose setup (task 0.2)". Qui aggiungo solo quanto emerso
+dalla verifica end-to-end.)
+
+- **Database `glitchtip` separato**: confermato creato correttamente
+  dall'init script (`docker/postgres/init/01-glitchtip-db.sql`), verificato
+  con `\l` in psql dentro il container `db`.
+- **`GLITCHTIP_EMBED_WORKER` non impostato esplicitamente**: `SERVER_ROLE:
+  all_in_one` lo forza comunque a `true` dentro lo script di avvio
+  ufficiale, quindi non serve duplicarlo.
