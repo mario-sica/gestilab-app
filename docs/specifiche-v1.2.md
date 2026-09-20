@@ -112,7 +112,7 @@ La differenza fra locale e produzione è contenuta in tre variabili d'ambiente: 
 
 Regole valide in entrambi i casi:
 - Lo slug è scelto alla creazione del tenant, immutabile dopo l'attivazione.
-- Slug riservati: `www`, `app`, `console`, `api`, `static`, `admin`, `status`, `docs`, `mail`.
+- Slug riservati: elenco in `SLUG_RISERVATI`, `packages/shared/src/slug.ts` — unica fonte di verità, non ripetere l'elenco qui.
 - Il tenant è risolto **dall'host**, mai da query o body; host sconosciuto → 404.
 - Tenant sospeso: sola lettura ed export per 90 giorni, poi blocco.
 - Dominio personalizzato dell'istituto via CNAME: V2.
