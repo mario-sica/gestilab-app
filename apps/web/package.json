@@ -10,7 +10,10 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@gestilab/db": "workspace:*",
+    "@gestilab/shared": "workspace:*",
     "autoprefixer": "^10.6.1",
+    "drizzle-orm": "^0.45.2",
     "next": "15.5.25",
     "postcss": "^8.5.28",
     "react": "19.3.0",

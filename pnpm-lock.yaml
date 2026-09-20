@@ -53,9 +53,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@gestilab/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@gestilab/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       autoprefixer:
         specifier: ^10.6.1
         version: 10.6.1(postcss@8.5.28)
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
       next:
         specifier: 15.5.25
         version: 15.5.25(@types/node@26.6.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
