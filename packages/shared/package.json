@@ -7,13 +7,18 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./env": "./src/env.ts"
+    "./env": "./src/env.ts",
+    "./slug": "./src/slug.ts"
   },
   "scripts": {
     "lint": "eslint . --config ../../eslint.config.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
   }
 }

@@ -51,7 +51,7 @@ Regole:
 
 **Domani (produzione).** Gli stessi host su `gestilab.it`, più il sito vetrina su apex e `www`.
 
-Slug riservati (identici nei due ambienti): `www`, `app`, `console`, `api`, `static`, `admin`, `status`, `docs`, `mail`, `cdn`.
+Slug riservati (identici nei due ambienti): elenco in `SLUG_RISERVATI`, `packages/shared/src/slug.ts` — unica fonte di verità, non ripetere l'elenco in questo documento.
 
 La variabile `BASE_DOMAIN` (`gestilab.test` oppure `gestilab.it`) è l'unico punto in cui il dominio compare. **Nessun dominio hardcoded nel codice**, nemmeno nei test o nella generazione dei QR: un dominio scritto a mano da qualche parte è un difetto bloccante.
 

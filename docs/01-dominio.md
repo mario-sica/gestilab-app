@@ -25,7 +25,7 @@ Riferimento autoritativo per schema, migrazioni e regole di dominio. In conflitt
 | Colonna | Tipo | Note |
 |---|---|---|
 | id | uuid PK | |
-| slug | text unique | `[a-z0-9-]{3,40}`, immutabile dopo attivazione. Riservati: www, app, console, api, static, admin, status, docs, mail |
+| slug | text unique | `[a-z0-9-]{3,40}`, immutabile dopo attivazione. Elenco riservati e validazione: `SLUG_RISERVATI`/`slugValido` in `packages/shared/src/slug.ts` (unica fonte di verità, non duplicare l'elenco qui) |
 | dominio_personalizzato | text? unique | V2 |
 | codice_meccanografico | text unique | |
 | denominazione, tipologia, indirizzo | text | tipologia: liceo \| tecnico \| professionale \| IISS |
