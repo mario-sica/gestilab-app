@@ -9,6 +9,7 @@
     "dev": "docker compose -f compose.yaml -f compose.dev.yaml up",
     "dev:local": "turbo run dev",
     "local-prod": "docker compose -f compose.yaml -f compose.local-prod.yaml up",
+    "db:migrate": "docker compose -f compose.yaml -f compose.dev.yaml exec api pnpm --filter @gestilab/db run migrate",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
