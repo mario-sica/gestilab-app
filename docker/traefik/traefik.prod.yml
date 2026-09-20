@@ -1,0 +1,30 @@
+# Configurazione statica di Traefik per il profilo prod. Stessa forma di
+# docker/traefik/traefik.yml (local-prod): cambia solo l'emittente del
+# certificato — qui Let's Encrypt via DNS-01 invece della CA locale mkcert
+# (nessun file "dynamic/tls.yml" da montare: i certificati li gestisce
+# l'ACME resolver, non un file statico). Il provider DNS e l'email vanno
+# passati da compose.prod.yaml (CLI args, cosí può leggerli da .env).
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+
+ping: {}
+
+api:
+  dashboard: false
+
+log:
+  level: INFO

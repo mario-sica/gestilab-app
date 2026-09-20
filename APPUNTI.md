@@ -132,3 +132,29 @@ un'immagine costruita per lo stage sbagliato. Riverificato: `pnpm local-prod`
 healthy, `localhost:3000` e `localhost:3001/api/v1/salute` rispondono. Lo
 stesso principio andrà applicato quando si scriverà `compose.prod.yaml`
 (0.2c): nome immagine proprio, non condiviso con `local-prod`.
+
+# Task 0.2c — compose.prod.yaml (scritto, mai eseguito)
+
+`docker compose -f compose.yaml -f compose.prod.yaml config` passa pulito
+(nessun servizio avviato: non c'è un dominio/VPS, per design di questa fase).
+Stessa forma di `compose.local-prod.yaml` — stessi servizi, stesso routing su
+`dellaquila`/`demo`/`app`/`console`, applicato il principio del nome
+immagine distinto (`gestilab-web-prod`/`gestilab-api-prod`) imparato nel bug
+precedente. Differenze, tutte in linea con quanto richiesto da
+`docs/02-architettura.md`:
+
+- `BASE_DOMAIN=gestilab.it` invece di `gestilab.test`.
+- TLS: Let's Encrypt DNS-01 (`docker/traefik/traefik.prod.yml` + resolver
+  ACME passato via CLI in `compose.prod.yaml`, letto da `ACME_EMAIL` e
+  `DNS_PROVIDER` in `.env`) invece del certificato statico mkcert. Router
+  `web` ha in più la label `tls.certresolver=letsencrypt`, necessaria solo
+  con un resolver ACME nominato (local-prod usa il certificato di default
+  del provider file, non serve specificarlo).
+- `restart: unless-stopped` e limiti `mem_limit`/`cpus` su ogni servizio
+  (valori prudenti, da ritarare quando ci sarà un VPS reale con le sue
+  risorse effettive — non testati sotto carico).
+
+`ACME_EMAIL` e `DNS_PROVIDER` sono in `.env.example` vuoti, con commento che
+rimanda ai "Prerequisiti a spesa" del backlog: il provider DNS scelto
+richiederà anche le proprie variabili di autenticazione (token/chiave API),
+da aggiungere quando si sceglierà — non prima, e mai versionate.
