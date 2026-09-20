@@ -1,5 +1,5 @@
 import { creaClient, trovaIstitutoAttivoDaSlug, type Db } from '@gestilab/db';
-import { leggiEnv, slugValido, SLUG_RISERVATI } from '@gestilab/shared';
+import { eSlugRiservato, formatoSlugValido, leggiEnv } from '@gestilab/shared';
 
 // Risoluzione tenant da host (docs/02-architettura.md § Risoluzione del
 // tenant): estrae lo slug dal primo segmento dell'host, esclude i riservati,
@@ -43,9 +43,7 @@ export function estraiSlug(host: string): string | null {
   return parti[0] || null;
 }
 
-export function eSlugRiservato(slug: string): boolean {
-  return (SLUG_RISERVATI as readonly string[]).includes(slug);
-}
+export { eSlugRiservato };
 
 /**
  * Risolve lo slug in un istituto attivo. `null` = nessun istituto con
@@ -65,6 +63,11 @@ export async function risolviTenant(slug: string): Promise<{ id: string } | null
   return istituto;
 }
 
+/**
+ * Solo il formato: il chiamante (`middleware.ts`) ha già escluso gli slug
+ * riservati prima di arrivare qui — ricontrollarli con `slugValido` sarebbe
+ * un lavoro ripetuto a vuoto sul percorso di ogni richiesta.
+ */
 export function validoPerLookup(slug: string): boolean {
-  return slugValido(slug);
+  return formatoSlugValido(slug);
 }

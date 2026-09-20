@@ -37,17 +37,20 @@ export const SLUG_RISERVATI = [
 
 const REGEX_SLUG = /^[a-z0-9-]{3,40}$/;
 
+export function eSlugRiservato(slug: string): boolean {
+  return (SLUG_RISERVATI as readonly string[]).includes(slug);
+}
+
 /**
- * Valida uno slug di istituto: `docs/01-dominio.md` — `[a-z0-9-]{3,40}`, non
- * uno slug riservato, non inizia né finisce con un trattino, niente trattini
- * doppi. Usata sia dal provisioning tenant sia dal middleware di
- * risoluzione tenant.
+ * Solo il formato — `[a-z0-9-]{3,40}`, non inizia né finisce con un
+ * trattino, niente trattini doppi — senza controllare se è riservato.
+ * Usata da chi ha già escluso i riservati per conto proprio (es. il
+ * middleware web, che li tratta diversamente: passthrough, non 404) e
+ * ricontrollarli qui sarebbe un lavoro ripetuto a vuoto. Quando serve il
+ * controllo completo in un colpo solo, usare `slugValido`.
  */
-export function slugValido(slug: string): boolean {
+export function formatoSlugValido(slug: string): boolean {
   if (!REGEX_SLUG.test(slug)) {
-    return false;
-  }
-  if ((SLUG_RISERVATI as readonly string[]).includes(slug)) {
     return false;
   }
   if (slug.startsWith('-') || slug.endsWith('-')) {
@@ -57,4 +60,13 @@ export function slugValido(slug: string): boolean {
     return false;
   }
   return true;
+}
+
+/**
+ * Valida uno slug di istituto: `docs/01-dominio.md` — formato più non
+ * riservato, in un solo controllo. Usata dal provisioning tenant e dal
+ * plugin tenant dell'API (task 0.7), dove non serve distinguere i due casi.
+ */
+export function slugValido(slug: string): boolean {
+  return formatoSlugValido(slug) && !eSlugRiservato(slug);
 }

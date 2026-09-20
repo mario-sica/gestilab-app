@@ -1,6 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import { SLUG_RISERVATI, slugValido } from './slug.js';
+import { eSlugRiservato, formatoSlugValido, SLUG_RISERVATI, slugValido } from './slug.js';
+
+describe('eSlugRiservato', () => {
+  it.each(SLUG_RISERVATI)('riconosce "%s" come riservato', (slug) => {
+    expect(eSlugRiservato(slug)).toBe(true);
+  });
+
+  it('non segnala come riservato uno slug qualunque', () => {
+    expect(eSlugRiservato('dellaquila')).toBe(false);
+  });
+});
+
+describe('formatoSlugValido', () => {
+  it('accetta un formato valido anche se lo slug è riservato: non è il suo compito escluderlo', () => {
+    expect(formatoSlugValido('www')).toBe(true);
+  });
+
+  it('rifiuta un formato malformato indipendentemente dai riservati', () => {
+    expect(formatoSlugValido('ab')).toBe(false);
+    expect(formatoSlugValido('-abc')).toBe(false);
+  });
+});
 
 describe('slugValido', () => {
   it.each(SLUG_RISERVATI)('rifiuta lo slug riservato "%s"', (slug) => {

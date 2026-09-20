@@ -42,4 +42,8 @@ describe('validoPerLookup', () => {
     expect(validoPerLookup('a')).toBe(false);
     expect(validoPerLookup('-abc')).toBe(false);
   });
+
+  it('non ricontrolla i riservati: per design, li ha già esclusi chi chiama (middleware.ts)', () => {
+    expect(validoPerLookup('www')).toBe(true);
+  });
 });
