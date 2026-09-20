@@ -1,0 +1,31 @@
+# Configurazione statica di Traefik per il profilo local-prod.
+# Identica nello spirito a quella che servirà in prod: cambiano solo
+# l'emittente del certificato (qui mkcert, in prod Let's Encrypt DNS-01) e
+# il dominio di base (qui gestilab.test, in prod gestilab.it).
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+ping: {}
+
+api:
+  dashboard: false
+
+log:
+  level: INFO

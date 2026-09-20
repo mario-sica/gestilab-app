@@ -34,4 +34,4 @@ COPY --from=build /app/packages/shared/src ./packages/shared/src
 COPY --from=build /app/apps/api/src ./apps/api/src
 USER node
 EXPOSE 3001
-CMD ["pnpm", "exec", "tsx", "apps/api/src/server.ts"]
+CMD ["pnpm", "--filter", "@gestilab/api", "exec", "tsx", "src/server.ts"]

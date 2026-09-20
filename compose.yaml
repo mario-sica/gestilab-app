@@ -10,6 +10,13 @@ services:
       dockerfile: apps/web/Dockerfile
     env_file:
       - .env
+    environment:
+      # Docker imposta di suo HOSTNAME=<id container>; il server standalone
+      # di Next.js legge proprio HOSTNAME come indirizzo su cui ascoltare
+      # (fallback a 0.0.0.0 solo se non impostata), quindi va sovrascritta
+      # esplicitamente o il server si mette in ascolto su un hostname che
+      # nessuno può raggiungere.
+      HOSTNAME: 0.0.0.0
     healthcheck:
       # 127.0.0.1 esplicito: Node in ascolto su 0.0.0.0 non risponde su ::1,
       # e "localhost" nel container risolve prima su IPv6.
