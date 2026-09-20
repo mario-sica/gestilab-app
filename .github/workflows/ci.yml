@@ -51,15 +51,22 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
+      # Checkout di gestilab-app col token di default (HTTPS): "ssh-key" su
+      # questo step userebbe SSH anche per QUESTO repository, e la deploy
+      # key sotto ha accesso solo a gestilab-auth-service — checkout
+      # fallirebbe a clonare gestilab-app stesso.
+      - uses: actions/checkout@v4
+
       # gestilab-auth-service (vendor/gestilab-auth-service) è un submodule
       # di un repository privato: il GITHUB_TOKEN di default non vi ha
-      # accesso. ssh-key qui carica una deploy key sola lettura (secret
-      # AUTH_SERVICE_DEPLOY_KEY) prima del checkout, così "submodules:
-      # recursive" può clonarlo.
-      - uses: actions/checkout@v4
+      # accesso. webfactory/ssh-agent carica la deploy key sola lettura
+      # (secret AUTH_SERVICE_DEPLOY_KEY) in un agent SSH, usato solo dal
+      # comando "git submodule" successivo — il checkout sopra non lo vede.
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
-          submodules: recursive
-          ssh-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
+
+      - run: git submodule update --init vendor/gestilab-auth-service
 
       - uses: pnpm/action-setup@v4
         with:
@@ -98,13 +105,17 @@ jobs:
     needs: verifica
     runs-on: ubuntu-latest
     steps:
-      # Stessa deploy key del job "verifica": entrambi i Dockerfile fanno
-      # "COPY . ." e "pnpm install" con l'intero workspace, incluso
-      # vendor/gestilab-auth-service.
+      # Stessa deploy key del job "verifica" (vedi i commenti lì): checkout
+      # di gestilab-app col token di default, submodule via ssh-agent
+      # dedicato — entrambi i Dockerfile fanno "COPY . ." sull'intero
+      # workspace, incluso vendor/gestilab-auth-service.
       - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
-          submodules: recursive
-          ssh-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.AUTH_SERVICE_DEPLOY_KEY }}
+
+      - run: git submodule update --init vendor/gestilab-auth-service
 
       - uses: docker/setup-buildx-action@v3
 
