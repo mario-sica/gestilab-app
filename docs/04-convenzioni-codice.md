@@ -85,8 +85,11 @@ Italiano per il dominio, inglese per i termini tecnici del framework (`useState`
 Regola: ogni bug corretto porta con sé un test che fallisce senza la correzione.
 
 ## CI (GitHub Actions)
-`lint` → `typecheck` → `test` → `build immagini` → `e2e su compose` → push su registry (solo su `main`).
-La pipeline fallisce se: coverage dei moduli di dominio < 70%, un endpoint senza dichiarazione di ruolo, una nuova dipendenza con vulnerabilità alta, un import che attraversa il confine pubblico/autenticato.
+Trigger: push su `dev` e pull request verso `dev` — non `main`. `main` (regola permanente, vedi "Flusso di lavoro git" più sotto) contiene solo lo scheletro del task 0.1 e non riceve altri commit: è `dev` il branch di integrazione reale, quello che la CI deve tenere verde.
+
+Pipeline (task 0.8): `lint` → `typecheck` → `test` → `pnpm audit` → `build immagini`. Nessun push su registry: oggi non esiste un ambiente remoto che consumerebbe le immagini (il progetto gira solo in locale, vedi `docs/CLAUDE.md` — vincolo "locale, a costo zero"); si aggiunge quando servirà un vero deploy.
+
+Passi ancora da aggiungere quando i loro prerequisiti esisteranno, non nel task 0.8: `e2e su compose` (Playwright non è ancora installato), coverage dei moduli di dominio < 70% (nessun modulo di dominio esiste ancora oltre `salute`), un endpoint senza dichiarazione di ruolo (l'autenticazione è Fase 1), un import che attraversa il confine pubblico/autenticato (quel confine non esiste ancora nel codice).
 
 ## Configurazione
 - Ogni URL, dominio, credenziale ed endpoint viene da variabili d'ambiente, validate all'avvio con uno schema Zod (`packages/shared/env.ts`): un avvio con configurazione incompleta fallisce subito e con un messaggio chiaro, non alla prima richiesta.
@@ -103,3 +106,4 @@ La pipeline fallisce se: coverage dei moduli di dominio < 70%, un endpoint senza
 - Non salvare dati personali nei log, nemmeno per debug.
 - Non scrivere un dominio, un URL di servizio o una porta direttamente nel codice.
 - Non introdurre dipendenze da servizi a pagamento o da API esterne non sostituibili: il sistema deve poter girare su una macchina scollegata da Internet.
+- Non aggiungere una variabile d'ambiente letta con `process.env` in un nuovo test senza aggiungerla anche a `turbo.json` (`tasks.test.env`): Turborepo 2 gira in `envMode: strict` di default e filtra silenziosamente ogni variabile non dichiarata lì prima di lanciare lo script. Il test fallisce solo quando eseguito con `pnpm test` dalla radice (che passa da Turbo); eseguito direttamente con `pnpm --filter <pacchetto> test` funziona comunque, perché bypassa Turbo — un modo facile per non accorgersi del problema finché non lo esegue la CI.

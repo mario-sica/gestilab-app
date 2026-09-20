@@ -1,0 +1,95 @@
+name: CI
+
+# dev è il branch di integrazione reale (docs/04-convenzioni-codice.md §
+# CI): main resta congelato allo scheletro del task 0.1 per regola
+# permanente, non riceve mai altri push, quindi non ha senso triggerare la
+# pipeline su di lui.
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+env:
+  BASE_DOMAIN: localhost
+  API_PORT: 3001
+  API_HOST: 0.0.0.0
+  POSTGRES_USER: gestilab
+  POSTGRES_PASSWORD: gestilab_ci_password
+  POSTGRES_DB: gestilab
+  DATABASE_URL: postgres://gestilab_app:gestilab_app_ci_password@localhost:5432/gestilab
+  DATABASE_MIGRATE_URL: postgres://gestilab:gestilab_ci_password@localhost:5432/gestilab
+  REDIS_URL: redis://localhost:6379
+  S3_ENDPOINT: http://localhost:9000
+  S3_BUCKET: gestilab-ci
+  SMTP_URL: smtp://localhost:1025
+  LOG_LEVEL: error
+
+jobs:
+  verifica:
+    name: lint, typecheck, test, audit
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gestilab
+          POSTGRES_PASSWORD: gestilab_ci_password
+          POSTGRES_DB: gestilab
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gestilab"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "11.4.0"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm typecheck
+
+      # Ruoli, schema e RLS (packages/db/migrations), poi i due tenant demo:
+      # plugin/tenant.test.ts (apps/api) cerca lo slug "dellaquila" seminato
+      # qui, non un fixture a parte.
+      - run: pnpm --filter @gestilab/db run migrate
+      - run: pnpm --filter @gestilab/db run seed
+
+      - run: pnpm test
+
+      # docs/06-sicurezza-gdpr.md § 2.9: una vulnerabilità "alta" blocca il
+      # merge. "moderate" e sotto non bloccano la pipeline.
+      - run: pnpm audit --audit-level=high
+
+  build-immagini:
+    name: build immagini Docker
+    needs: verifica
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Solo build, nessun push: non esiste ancora un ambiente remoto che
+      # consumerebbe queste immagini (docs/04-convenzioni-codice.md § CI).
+      - run: docker build -f apps/web/Dockerfile -t gestilab-web:ci .
+      - run: docker build -f apps/api/Dockerfile -t gestilab-api:ci .
