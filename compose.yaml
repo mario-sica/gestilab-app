@@ -1,0 +1,126 @@
+# Definizione condivisa dei servizi. Nessuna porta pubblicata qui: le
+# esposizioni verso l'host stanno solo in compose.dev.yaml (e in futuro nei
+# profili local-prod/prod, dietro il proxy). Un solo stack, tre profili
+# (vedi docs/02-architettura.md): qui c'è solo la base comune.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    environment:
+      API_HOST: 0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/v1/salute"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  storage:
+    image: quay.io/minio/minio:latest
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  glitchtip:
+    image: glitchtip/glitchtip:latest
+    environment:
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      DATABASE_URL: ${GLITCHTIP_DATABASE_URL}
+      REDIS_URL: ${GLITCHTIP_REDIS_URL}
+      EMAIL_URL: ${GLITCHTIP_EMAIL_URL}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
+      PORT: 8000
+    command: >
+      sh -c "./manage.py migrate --noinput &&
+             ./manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 2 glitchtip.wsgi:application"
+    volumes:
+      - glitchtipdata:/code/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/_health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  miniodata:
+  glitchtipdata:
