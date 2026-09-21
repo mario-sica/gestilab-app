@@ -4,12 +4,12 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { withTenant, type Db } from '@gestilab/db';
 import { utenti } from '@gestilab/db/schema';
-import { COOKIE_PER_AREA, ErroreDominio, type AreaSessione } from '@gestilab/shared';
+import { AREA_PER_RUOLO, COOKIE_PER_AREA, ErroreDominio, type AreaSessione, type RuoloUtente } from '@gestilab/shared';
 import { sessioni } from 'gestilab-auth-service/schema';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    utente?: { id: string; ruolo: string };
+    utente?: { id: string; ruolo: RuoloUtente };
   }
 }
 
@@ -81,15 +81,21 @@ export const pluginSessione = fp(async function pluginSessione(app: FastifyInsta
 
 /**
  * Hook per singole rotte: 403 se il ruolo della sessione (già letta da
- * pluginSessione) non è tra quelli ammessi. Non genera qui il link
- * all'area corretta (task 1.1, "403 con link corretto"): quello è
- * responsabilità di apps/web, che conosce gli URL delle pagine di login —
- * questo endpoint espone solo il codice, non un URL hardcoded.
+ * pluginSessione) non è tra quelli ammessi. docs/02-architettura.md § Aree:
+ * "ruolo sbagliato → 403 con link all'area corretta, non redirect al
+ * login". L'API espone l'AREA (dettagli.areaCorretta, dalla mappa
+ * ruolo → area di packages/shared), non un URL: il link lo compone
+ * apps/web, che conosce le proprie rotte — nessun percorso hardcoded qui.
  */
-export function richiediRuolo(ruoliAmmessi: readonly string[]) {
+export function richiediRuolo(ruoliAmmessi: readonly RuoloUtente[]) {
   return async (request: FastifyRequest): Promise<void> => {
-    if (!request.utente || !ruoliAmmessi.includes(request.utente.ruolo)) {
+    if (!request.utente) {
       throw new ErroreDominio('RUOLO_NON_VALIDO', 'Non hai i permessi per questa azione.', 403);
+    }
+    if (!ruoliAmmessi.includes(request.utente.ruolo)) {
+      throw new ErroreDominio('RUOLO_NON_VALIDO', 'Non hai i permessi per questa azione.', 403, {
+        areaCorretta: AREA_PER_RUOLO[request.utente.ruolo],
+      });
     }
   };
 }

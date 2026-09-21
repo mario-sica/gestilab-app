@@ -188,6 +188,12 @@ describe('richiediRuolo', () => {
     });
 
     expect(risposta.statusCode).toBe(403);
-    expect(risposta.json().errore.codice).toBe('RUOLO_NON_VALIDO');
+    expect(risposta.json().errore).toEqual({
+      codice: 'RUOLO_NON_VALIDO',
+      messaggio: 'Non hai i permessi per questa azione.',
+      // Un supervisore appartiene all'area admin: è lì che apps/web deve
+      // rimandarlo, non alla pagina di login (docs/02-architettura.md § Aree).
+      dettagli: { areaCorretta: 'admin' },
+    });
   });
 });
