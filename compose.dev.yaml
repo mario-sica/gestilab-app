@@ -50,7 +50,9 @@ services:
       - -c
       # anche @gestilab/db, non solo @gestilab/api: "pnpm db:migrate" (radice)
       # esegue le migrazioni in questo stesso container (docs/CLAUDE.md).
-      - pnpm install --frozen-lockfile --filter @gestilab/api... --filter @gestilab/db... --store-dir /pnpm-store && pnpm --filter @gestilab/api run dev
+      # anche @gestilab/worker: da questo container si lanciano lint/typecheck/
+      # test dell'intero workspace (docs/00-ripresa-sessione.md).
+      - pnpm install --frozen-lockfile --filter @gestilab/api... --filter @gestilab/db... --filter @gestilab/worker... --store-dir /pnpm-store && pnpm --filter @gestilab/api run dev
     environment:
       NODE_ENV: development
       CI: "true"
@@ -64,8 +66,30 @@ services:
       - nm_api_api:/app/apps/api/node_modules
       - nm_api_shared:/app/packages/shared/node_modules
       - nm_api_db:/app/packages/db/node_modules
+      - nm_api_worker:/app/apps/worker/node_modules
     healthcheck:
       start_period: 90s
+
+  worker:
+    image: gestilab-api-dev
+    build:
+      target: deps
+    command:
+      - sh
+      - -c
+      - pnpm install --frozen-lockfile --filter @gestilab/worker... --store-dir /pnpm-store && pnpm --filter @gestilab/worker run dev
+    environment:
+      NODE_ENV: development
+      CI: "true"
+    volumes:
+      - .:/app:z
+      - pnpm_store:/pnpm-store
+      - nm_worker_root:/app/node_modules
+      - nm_worker_web:/app/apps/web/node_modules
+      - nm_worker_api:/app/apps/api/node_modules
+      - nm_worker_worker:/app/apps/worker/node_modules
+      - nm_worker_shared:/app/packages/shared/node_modules
+      - nm_worker_db:/app/packages/db/node_modules
 
   # Servizio del repository separato gestilab-auth-service (privato):
   # "pnpm dev" normale non lo tocca, così chi clona solo questo repository
@@ -161,5 +185,12 @@ volumes:
   nm_api_api:
   nm_api_shared:
   nm_api_db:
+  nm_api_worker:
+  nm_worker_root:
+  nm_worker_web:
+  nm_worker_api:
+  nm_worker_worker:
+  nm_worker_shared:
+  nm_worker_db:
   pnpm_store_auth:
   nm_auth_root:

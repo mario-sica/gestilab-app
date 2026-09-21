@@ -20,6 +20,8 @@
       "dependsOn": ["^build"],
       "env": [
         "BASE_DOMAIN",
+        "WEB_PROTOCOLLO",
+        "WEB_PORTA",
         "API_PORT",
         "API_HOST",
         "DATABASE_URL",
@@ -29,6 +31,8 @@
         "S3_ENDPOINT",
         "S3_BUCKET",
         "SMTP_URL",
+        "EMAIL_MITTENTE",
+        "MAILPIT_API_URL",
         "BACKUP_DIR"
       ]
     }

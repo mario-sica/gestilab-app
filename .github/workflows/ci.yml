@@ -12,6 +12,8 @@ on:
 
 env:
   BASE_DOMAIN: localhost
+  WEB_PROTOCOLLO: http
+  WEB_PORTA: 3000
   API_PORT: 3001
   API_HOST: 0.0.0.0
   POSTGRES_USER: gestilab
@@ -28,6 +30,8 @@ env:
   S3_ENDPOINT: http://localhost:9000
   S3_BUCKET: gestilab-ci
   SMTP_URL: smtp://localhost:1025
+  EMAIL_MITTENTE: GestiLab <noreply@gestilab.localhost>
+  MAILPIT_API_URL: http://localhost:8025
   LOG_LEVEL: error
 
 jobs:
@@ -52,6 +56,16 @@ jobs:
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      # apps/worker/src/email/invia.test.ts invia davvero via SMTP e rilegge
+      # dall'API HTTP di Mailpit ("flusso completo con mailpit", task 1.3).
+      mailpit:
+        image: axllent/mailpit:latest
+        ports: ["1025:1025", "8025:8025"]
+        options: >-
+          --health-cmd "wget --no-verbose --tries=1 --spider http://localhost:8025/readyz"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10

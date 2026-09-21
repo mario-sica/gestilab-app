@@ -32,8 +32,11 @@ Realizzato da `apps/api/src/plugin/errori.ts` (`setErrorHandler` centrale): ogni
 | `RUOLO_NON_VALIDO` | 403 | Sessione valida ma ruolo non ammesso dalla rotta. `dettagli.areaCorretta` (`admin` \| `tecnico`) è l'area a cui il ruolo appartiene (`AREA_PER_RUOLO`, `packages/shared`): `apps/web` la usa per mostrare il link all'area giusta, non un redirect al login (`docs/02-architettura.md` § Aree) |
 | `TENANT_NON_TROVATO` | 404 | Slug riservato, malformato, o nessun istituto attivo con quello slug |
 | `RISORSA_NON_TROVATA` | 404 | Rotta inesistente |
+| `EMAIL_GIA_PRESENTE` | 409 | Invito utente con un'email già usata nello stesso istituto (indice `utenti_istituto_id_email_idx`) |
 | `TROPPE_RICHIESTE` | 429 | Limite di frequenza superato |
 | `CONTESTO_MANCANTE` | 500 | Errore di programmazione: `pluginSessione` registrato senza `pluginTenant` prima |
+| `AUTH_SERVICE_ERRORE` | 502 | gestilab-auth-service ha risposto con un errore a una chiamata interna |
+| `AUTH_SERVICE_NON_RAGGIUNGIBILE` | 503 | gestilab-auth-service non raggiungibile (profilo `auth` non avviato, rete) |
 | `ERRORE_INTERNO` | 500 | Qualunque errore non previsto |
 
 Ogni nuovo modulo che introduce i propri codici (`ASSET_NON_TROVATO`, `SEGNALAZIONE_GIA_CHIUSA`, ecc.) li aggiunge a questa tabella nello stesso commit.
@@ -47,6 +50,16 @@ Regola non negoziabile #2 di `docs/CLAUDE.md`: il tenant si ricava dall'host, ma
 3. Un tenant risolto decora `request.tenantId`, pronto per essere passato a `withTenant(db, request.tenantId, fn)` (`packages/db`) nel repository del modulo.
 
 `pluginTenant` **non è registrato globalmente**: va montato dal singolo modulo che lo richiede (`app.register(pluginTenant, { db })` dentro il suo contesto). `/api/v1/salute` resta pubblica e non lo richiede.
+
+## Area admin: `/api/v1/admin/*`
+
+Contesto Fastify dedicato (`apps/api/src/app.ts`): `pluginTenant` + `pluginSessione` con area `admin` (cookie `gl_s_adm`) registrati solo lì, poi le rotte dei moduli admin. Ogni rotta dichiara i ruoli ammessi con `richiediRuolo([...])`; il supervisore entra nell'area ma è in sola lettura, quindi le rotte di scrittura ammettono solo `admin`.
+
+### `POST /api/v1/admin/utenti/inviti` — invita un utente (task 1.3, RF-A2)
+
+Ruoli: `admin`. Corpo: `schemaNuovoInvitoUtente` (`packages/shared`): `email`, `nome`, `cognome`, `ruolo` (`admin` | `at` | `supervisore`). Crea l'utente **senza password**, chiede a gestilab-auth-service un token d'invito (`POST /inviti`, 72 h, monouso) e accoda al worker l'email con il link `{origine del tenant}/invito/{token}` — l'origine è `WEB_PROTOCOLLO://{slug}.BASE_DOMAIN[:WEB_PORTA]` (`origineTenant`, `packages/shared`), mai un dominio scritto nel codice. Risponde `201 { utenteId, scadeIl }`.
+
+Se l'auth-service o la coda falliscono l'utente resta creato ma senza invito (nessun rollback: l'Admin lo vede in elenco e lo reinvita, che è anche la via per un link scaduto). L'invio dell'email è asincrono (coda `email`, `apps/worker`): un `201` dice che l'email è stata accodata, non consegnata.
 
 ## Rate limit
 

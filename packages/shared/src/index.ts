@@ -12,3 +12,11 @@ export type { AreaSessione } from './sessione.js';
 
 export { AREA_PER_RUOLO, RUOLI_PER_AREA, RUOLI_UTENTE, eRuoloUtente } from './ruoli.js';
 export type { RuoloUtente } from './ruoli.js';
+
+export { CODA_EMAIL, schemaJobEmail, schemaJobEmailInvito } from './email.js';
+export type { JobEmail, JobEmailInvito } from './email.js';
+
+export { origineTenant } from './url-pubblico.js';
+
+export { schemaNuovoInvitoUtente } from './utenti.js';
+export type { NuovoInvitoUtente } from './utenti.js';

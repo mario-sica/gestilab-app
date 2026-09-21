@@ -24,7 +24,10 @@ gestilab/
 │  │     │   └─ <modulo>/{rotte.ts,servizio.ts,repository.ts,test/}
 │  │     ├─ plugin/         sessione, tenant, rate-limit, errori, openapi
 │  │     └─ server.ts
-│  └─ worker/               job BullMQ: pdf, email, ricorrenze, pulizia
+│  └─ worker/               consumatore BullMQ (stessa immagine di api, entrypoint diverso)
+│     └─ src/
+│        ├─ email/          invia.ts, trasporto.ts (SMTP_URL), modelli/<tipo>.ts
+│        └─ index.ts        Worker sulla coda "email"; in futuro pdf, ricorrenze, pulizia
 ├─ packages/
 │  ├─ shared/               schemi Zod, tipi, enum, costanti, messaggi errore
 │  └─ db/                   schema Drizzle, migrazioni, seed, policy RLS

@@ -11,6 +11,7 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/worker/package.json apps/worker/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY vendor/gestilab-auth-service/package.json vendor/gestilab-auth-service/package.json
@@ -18,7 +19,7 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY . .
-RUN pnpm --filter @gestilab/api build
+RUN pnpm --filter @gestilab/api --filter @gestilab/worker build
 
 # ---
 # packages/shared non ha ancora un proprio step di build (resta sorgente TS,
@@ -27,6 +28,9 @@ RUN pnpm --filter @gestilab/api build
 # validato dallo stage "build" tramite tsx, ora dipendenza di produzione di
 # apps/api. Quando packages/shared avrà un proprio build, questo stage potrà
 # passare a servire solo JS compilato.
+# Stessa immagine anche per apps/worker (docs/02-architettura.md § Servizi:
+# "stessa immagine di api, entrypoint diverso"): il servizio "worker" in
+# compose la avvia con un altro command, vedi compose.yaml.
 FROM node:22-alpine AS runner
 RUN corepack enable
 RUN apk add --no-cache postgresql16-client
@@ -34,13 +38,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/api/package.json apps/api/package.json
+COPY apps/worker/package.json apps/worker/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY vendor/gestilab-auth-service/package.json vendor/gestilab-auth-service/package.json
-RUN pnpm install --prod --frozen-lockfile --filter @gestilab/api...
+RUN pnpm install --prod --frozen-lockfile --filter @gestilab/api... --filter @gestilab/worker...
 COPY --from=build /app/packages/shared/src ./packages/shared/src
 COPY --from=build /app/packages/db/src ./packages/db/src
 COPY --from=build /app/apps/api/src ./apps/api/src
+COPY --from=build /app/apps/worker/src ./apps/worker/src
 # gestilab-auth-service/schema è sorgente TS eseguito via tsx (stesso motivo
 # di packages/shared/db sopra): il link in node_modules punta qui, va
 # popolato esplicitamente perché questo stage riparte da un'immagine pulita
