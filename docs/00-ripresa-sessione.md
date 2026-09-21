@@ -33,7 +33,7 @@ curl -s "https://api.github.com/repos/mario-sica/gestilab-app/actions/runs?branc
 ```
 Se l'ultimo run non è `completed`/`success`, non dare per scontato che l'ultimo lavoro fosse concluso.
 
-**`gestilab-auth-service` non ha ancora una CI propria** (gap noto, non ancora deciso se/quando colmarlo). Verificare a mano: typecheck, lint e test vanno eseguiti tramite il container `auth` dello stack di sviluppo di `gestilab-app` (che monta dal vivo il clone standalone), non tramite `vendor/gestilab-auth-service` visto da `api`/`web` (quello è il submodule, un checkout diverso e spesso più vecchio).
+**`gestilab-auth-service`** ha una CI propria dal 2026-09-21 (`.github/workflows/ci.yml`, stesso modello). Il repository è privato: senza `gh` o un token GitHub in locale l'esito dei run **non è leggibile dall'API** — controllarlo su https://github.com/mario-sica/gestilab-auth-service/actions (o chiedere a Mario). In locale la stessa verifica gira nel container `auth` dello stack di sviluppo di `gestilab-app` (`pnpm dev:auth`, che monta dal vivo il clone standalone): `docker compose exec auth sh -c 'pnpm lint && pnpm typecheck && pnpm test'`. Non tramite `vendor/gestilab-auth-service` visto da `api`/`web` (quello è il submodule, un checkout diverso e spesso più vecchio).
 
 ## 3. Confronta lo stato del codice con il backlog
 
