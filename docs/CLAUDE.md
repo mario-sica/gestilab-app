@@ -7,6 +7,7 @@ Leggi il documento pertinente **prima** di scrivere codice in quell'area. Non de
 
 | File | Quando leggerlo |
 |---|---|
+| `docs/00-ripresa-sessione.md` | **Sempre, come primo passo di ogni nuova conversazione** |
 | `docs/01-dominio.md` | Qualsiasi modifica a schema, entità, migrazioni, regole di dominio |
 | `docs/02-architettura.md` | Docker, tenancy, routing, deploy, servizi |
 | `docs/03-api.md` | Nuovi endpoint, contratti, errori, paginazione |
