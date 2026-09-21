@@ -90,6 +90,11 @@ services:
       PORT: 3002
       HOST: 0.0.0.0
       DATABASE_URL: ${AUTH_DATABASE_URL}
+      # Solo per i test di questo servizio (setup/teardown con la
+      # connessione owner): il server runtime non la richiede mai, vedi il
+      # commento in src/env.ts di gestilab-auth-service.
+      DATABASE_MIGRATE_URL: ${DATABASE_MIGRATE_URL}
+      REDIS_URL: ${REDIS_URL}
       LOG_LEVEL: info
     ports:
       - "3002:3002"
@@ -99,6 +104,8 @@ services:
       - nm_auth_root:/app/node_modules
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   db:

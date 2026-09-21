@@ -161,6 +161,9 @@ importers:
 
   vendor/gestilab-auth-service:
     dependencies:
+      '@fastify/rate-limit':
+        specifier: ^11.2.0
+        version: 11.2.0
       '@gestilab/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -182,6 +185,9 @@ importers:
       fastify-type-provider-zod:
         specifier: ^7.0.0
         version: 7.0.0(@fastify/swagger@9.8.1)(fastify@5.12.5)(openapi-types@12.1.3)(zod@4.6.5)
+      ioredis:
+        specifier: ^6.0.0
+        version: 6.0.0
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
