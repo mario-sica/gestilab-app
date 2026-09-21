@@ -4,24 +4,14 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { withTenant, type Db } from '@gestilab/db';
 import { utenti } from '@gestilab/db/schema';
-import { ErroreDominio } from '@gestilab/shared';
+import { COOKIE_PER_AREA, ErroreDominio, type AreaSessione } from '@gestilab/shared';
 import { sessioni } from 'gestilab-auth-service/schema';
-
-type Area = 'admin' | 'tecnico';
 
 declare module 'fastify' {
   interface FastifyRequest {
     utente?: { id: string; ruolo: string };
   }
 }
-
-// docs/06-sicurezza-gdpr.md (gestilab-app) § 2.2: un nome di cookie per
-// area. Solo admin/tecnico per ora — coerente con gestilab-auth-service,
-// che non emette ancora sessioni docente (persona + PIN, task 1.5).
-const COOKIE_PER_AREA: Record<Area, string> = {
-  admin: 'gl_s_adm',
-  tecnico: 'gl_s_tec',
-};
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -38,7 +28,7 @@ function hashToken(token: string): string {
  * conservare il vecchio ruolo — stesso principio del perimetro dell'AT
  * ricalcolato ad ogni richiesta (docs/06-sicurezza-gdpr.md § 2.3).
  */
-export const pluginSessione = fp(async function pluginSessione(app: FastifyInstance, opts: { db: Db; area: Area }) {
+export const pluginSessione = fp(async function pluginSessione(app: FastifyInstance, opts: { db: Db; area: AreaSessione }) {
   app.decorateRequest('utente', undefined);
 
   app.addHook('onRequest', async (request: FastifyRequest) => {
