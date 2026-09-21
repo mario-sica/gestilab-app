@@ -22,6 +22,13 @@ import {
  * container: `pnpm db:seed` dalla radice, come `pnpm db:migrate`.
  */
 
+// Password di tutti gli utenti demo: "GestiLabDemo2026!". Hash Argon2id
+// precalcolato (stessi parametri di gestilab-auth-service, docs/06 § 2.1)
+// per non aggiungere argon2 a packages/db. Solo per l'ambiente locale e i
+// test end-to-end (apps/web/e2e): un tenant reale nasce da
+// `pnpm tenant:create` (task 1.6) con invito, mai con questa password.
+const HASH_PASSWORD_DEMO = '$argon2id$v=19$m=19456,t=2,p=1$e8BsKB1w3v4xKCB6C3YzfQ$V4xI9BMkUkY4rbXSELw8VpZuZeLwXEtI72sEkn/dndc';
+
 interface DatiTenant {
   slug: string;
   codiceMeccanografico: string;
@@ -142,6 +149,7 @@ async function seminaTutti(db: ReturnType<typeof creaClient>, baseDomain: string
             nome: 'Admin',
             cognome: dati.slug,
             ruolo: 'admin',
+            passwordHash: HASH_PASSWORD_DEMO,
           },
           {
             istitutoId: istituto.id,
@@ -149,6 +157,7 @@ async function seminaTutti(db: ReturnType<typeof creaClient>, baseDomain: string
             nome: 'Assistente',
             cognome: 'Tecnico',
             ruolo: 'at',
+            passwordHash: HASH_PASSWORD_DEMO,
           },
         ])
         .returning();

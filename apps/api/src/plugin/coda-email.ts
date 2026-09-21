@@ -22,9 +22,12 @@ declare module 'fastify' {
 // Il payload viene validato qui prima di accodare: un job che non rispetta
 // il contratto è un bug del chiamante, meglio fallire subito nella
 // richiesta che scoprirlo nel worker.
-export const pluginCodaEmail = fp(async function pluginCodaEmail(app: FastifyInstance, opts: { redisUrl: string }) {
+// nomeCoda: solo per i test, che in sviluppo convivono con il container
+// "worker" in ascolto sulla coda reale (consumerebbe il job prima
+// dell'asserzione). In produzione resta sempre CODA_EMAIL.
+export const pluginCodaEmail = fp(async function pluginCodaEmail(app: FastifyInstance, opts: { redisUrl: string; nomeCoda?: string }) {
   const connection = new Redis(opts.redisUrl, { maxRetriesPerRequest: null });
-  const coda = new Queue<JobEmail>(CODA_EMAIL, {
+  const coda = new Queue<JobEmail>(opts.nomeCoda ?? CODA_EMAIL, {
     connection,
     defaultJobOptions: {
       // Tre tentativi con attesa crescente (2 s, 4 s, 8 s): copre un

@@ -18,5 +18,8 @@ export type { JobEmail, JobEmailInvito } from './email.js';
 
 export { origineTenant } from './url-pubblico.js';
 
-export { schemaNuovoInvitoUtente } from './utenti.js';
-export type { NuovoInvitoUtente } from './utenti.js';
+export { schemaNuovoInvitoUtente, schemaUtenteElenco } from './utenti.js';
+export type { NuovoInvitoUtente, UtenteElenco } from './utenti.js';
+
+export { MODALITA_ACCESSO_DOCENTE, schemaImpostazioni, schemaPinRigenerato } from './impostazioni.js';
+export type { Impostazioni, ModalitaAccessoDocente, PinRigenerato } from './impostazioni.js';

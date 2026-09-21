@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { schemaNuovoInvitoUtente } from '@gestilab/shared';
+import { schemaNuovoInvitoUtente, schemaUtenteElenco } from '@gestilab/shared';
 import { z } from 'zod';
 
 import { richiediRuolo } from '../../plugin/sessione.js';
+import { elencaUtenti } from './repository.js';
 import { invitaUtente, type DipendenzeAdminUtenti } from './servizio.js';
 
 const schemaRispostaInvito = z.object({
@@ -17,7 +18,16 @@ const schemaRispostaInvito = z.object({
 // ruolo e ambito"). Il supervisore entra nell'area admin ma in sola
 // lettura: invitare è scrittura, quindi solo 'admin'.
 export async function rotteAdminUtenti(app: FastifyInstance, deps: DipendenzeAdminUtenti): Promise<void> {
-  app.withTypeProvider<ZodTypeProvider>().post(
+  const tipizzata = app.withTypeProvider<ZodTypeProvider>();
+
+  // Lettura: anche il supervisore (area admin in sola lettura).
+  tipizzata.get(
+    '/utenti',
+    { preHandler: richiediRuolo(['admin', 'supervisore']), schema: { response: { 200: z.array(schemaUtenteElenco) } } },
+    async (richiesta) => elencaUtenti(deps.db, richiesta.tenantId!),
+  );
+
+  tipizzata.post(
     '/utenti/inviti',
     {
       preHandler: richiediRuolo(['admin']),

@@ -59,6 +59,14 @@ Contesto Fastify dedicato (`apps/api/src/app.ts`): `pluginTenant` + `pluginSessi
 
 Ruoli: `admin`. Corpo: `schemaNuovoInvitoUtente` (`packages/shared`): `email`, `nome`, `cognome`, `ruolo` (`admin` | `at` | `supervisore`). Crea l'utente **senza password**, chiede a gestilab-auth-service un token d'invito (`POST /inviti`, 72 h, monouso) e accoda al worker l'email con il link `{origine del tenant}/invito/{token}` — l'origine è `WEB_PROTOCOLLO://{slug}.BASE_DOMAIN[:WEB_PORTA]` (`origineTenant`, `packages/shared`), mai un dominio scritto nel codice. Risponde `201 { utenteId, scadeIl }`.
 
+### `GET /api/v1/admin/utenti` — elenco utenti
+
+Ruoli: `admin`, `supervisore`. Risponde `schemaUtenteElenco[]` (`packages/shared`): id, email, nome, cognome, ruolo, attivo, `passwordImpostata` (ha già accettato l'invito), `ultimoAccesso`. Mai `password_hash`. Ordinato per cognome e nome, **senza paginazione**: gli utenti di un istituto sono decine, non migliaia — la paginazione si definisce con la prima lista aperta (asset), non qui.
+
+### `GET /api/v1/admin/impostazioni` · `POST /api/v1/admin/impostazioni/pin-docente` — PIN d'istituto (task 1.4)
+
+`GET` (admin, supervisore): `{ modalitaAccessoDocente, pinImpostato }` — mai il PIN, che non è rileggibile (esiste solo l'hash). `POST …/pin-docente` (solo admin): chiede a gestilab-auth-service la rigenerazione (`POST /pin-istituto/rigenera`: 6 cifre, Argon2id in `istituti.pin_istituto_hash`, revoca di tutte le `sessioni_docente` attive nella stessa transazione) e risponde `{ pin, sessioniDocenteRevocate }` **una sola volta**: il PIN non viene conservato né loggato (`redact` su `pin`).
+
 Se l'auth-service o la coda falliscono l'utente resta creato ma senza invito (nessun rollback: l'Admin lo vede in elenco e lo reinvita, che è anche la via per un link scaduto). L'invio dell'email è asincrono (coda `email`, `apps/worker`): un `201` dice che l'email è stata accodata, non consegnata.
 
 ## Rate limit

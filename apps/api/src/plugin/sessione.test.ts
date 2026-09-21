@@ -92,7 +92,7 @@ describe('pluginSessione', () => {
     });
 
     expect(risposta.statusCode).toBe(200);
-    expect(risposta.json().utente).toEqual({ id: utenteId, ruolo: 'admin' });
+    expect(risposta.json().utente).toEqual({ id: utenteId, nome: 'Test', cognome: 'Sessione', email: 'test@esempio.test', ruolo: 'admin' });
   });
 
   it('senza cookie risponde 401', async () => {

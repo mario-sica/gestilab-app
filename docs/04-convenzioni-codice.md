@@ -94,7 +94,7 @@ Trigger: push su `dev` e pull request verso `dev` — non `main`. `main` (regola
 
 Pipeline (task 0.8): `lint` → `typecheck` → `test` → `pnpm audit` → `build immagini`. Nessun push su registry: oggi non esiste un ambiente remoto che consumerebbe le immagini (il progetto gira solo in locale, vedi `docs/CLAUDE.md` — vincolo "locale, a costo zero"); si aggiunge quando servirà un vero deploy.
 
-Passi ancora da aggiungere quando i loro prerequisiti esisteranno, non nel task 0.8: `e2e su compose` (Playwright non è ancora installato), coverage dei moduli di dominio < 70% (nessun modulo di dominio esiste ancora oltre `salute`), un endpoint senza dichiarazione di ruolo (l'autenticazione è Fase 1), un import che attraversa il confine pubblico/autenticato (quel confine non esiste ancora nel codice).
+Passi ancora da aggiungere quando i loro prerequisiti esisteranno, non nel task 0.8: `e2e su compose` (Playwright è installato e `pnpm e2e` gira in locale contro lo stack dev, `apps/web/e2e`; in CI manca ancora il job che avvia l'intero compose), coverage dei moduli di dominio < 70% (nessun modulo di dominio esiste ancora oltre `salute`), un endpoint senza dichiarazione di ruolo (l'autenticazione è Fase 1), un import che attraversa il confine pubblico/autenticato (quel confine non esiste ancora nel codice).
 
 ## Configurazione
 - Ogni URL, dominio, credenziale ed endpoint viene da variabili d'ambiente, validate all'avvio con uno schema Zod (`packages/shared/env.ts`): un avvio con configurazione incompleta fallisce subito e con un messaggio chiaro, non alla prima richiesta.

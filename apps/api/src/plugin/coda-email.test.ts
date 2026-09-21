@@ -1,20 +1,21 @@
 import Fastify from 'fastify';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
-import { CODA_EMAIL } from '@gestilab/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { pluginCodaEmail } from './coda-email.js';
 
-// Integrazione: Redis reale del profilo dev (stessa coda che consumerà
-// apps/worker). Ogni test parte da una coda vuota e la svuota alla fine.
+// Integrazione: Redis reale del profilo dev, su una coda con nome unico per
+// esecuzione — quella vera ("email") è già ascoltata dal container worker
+// di sviluppo, che consumerebbe il job prima dell'asserzione.
 const redisUrl = process.env.REDIS_URL;
 if (!redisUrl) {
   throw new Error('REDIS_URL non impostata: avvia "pnpm dev" prima di questo test.');
 }
 
+const NOME_CODA = `email-test-${Date.now()}`;
 const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
-const coda = new Queue(CODA_EMAIL, { connection });
+const coda = new Queue(NOME_CODA, { connection });
 
 afterEach(async () => {
   await coda.obliterate({ force: true });
@@ -23,7 +24,7 @@ afterEach(async () => {
 describe('pluginCodaEmail', () => {
   it('accoda un job valido sulla coda "email" con il payload intatto', async () => {
     const app = Fastify({ logger: false });
-    await app.register(pluginCodaEmail, { redisUrl });
+    await app.register(pluginCodaEmail, { redisUrl, nomeCoda: NOME_CODA });
     await app.ready();
     const job = {
       tipo: 'invito' as const,
@@ -46,7 +47,7 @@ describe('pluginCodaEmail', () => {
 
   it('rifiuta un job che non rispetta il contratto senza accodarlo', async () => {
     const app = Fastify({ logger: false });
-    await app.register(pluginCodaEmail, { redisUrl });
+    await app.register(pluginCodaEmail, { redisUrl, nomeCoda: NOME_CODA });
     await app.ready();
 
     await expect(

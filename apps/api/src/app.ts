@@ -4,6 +4,7 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fas
 import { creaClient } from '@gestilab/db';
 import { VERSIONE_API, type Env } from '@gestilab/shared';
 
+import { rotteAdminImpostazioni } from './moduli/admin-impostazioni/rotte.js';
 import { rotteAdminUtenti } from './moduli/admin-utenti/rotte.js';
 import { rotteSalute } from './moduli/salute/rotte.js';
 import { pluginCodaEmail } from './plugin/coda-email.js';
@@ -52,6 +53,7 @@ export async function costruisciApp(env: EnvApp) {
       await admin.register(pluginTenant, { db });
       await admin.register(pluginSessione, { db, area: 'admin' });
       await admin.register(rotteAdminUtenti, { db, env, authService, codaEmail: admin.codaEmail });
+      await admin.register(rotteAdminImpostazioni, { db, authService });
     },
     { prefix: `/api/${VERSIONE_API}/admin` },
   );

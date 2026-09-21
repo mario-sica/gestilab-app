@@ -26,6 +26,7 @@ env:
   # reale la raggiunge davvero, i test della Server Action di login
   # mockano fetch. Valore solo per soddisfare lo schema di leggiEnv().
   AUTH_SERVICE_URL: http://localhost:3002
+  API_URL: http://localhost:3001
   REDIS_URL: redis://localhost:6379
   S3_ENDPOINT: http://localhost:9000
   S3_BUCKET: gestilab-ci

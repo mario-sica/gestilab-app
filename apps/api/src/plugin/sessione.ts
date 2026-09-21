@@ -1,32 +1,23 @@
-import { createHash } from 'node:crypto';
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { eq } from 'drizzle-orm';
 import { withTenant, type Db } from '@gestilab/db';
-import { utenti } from '@gestilab/db/schema';
 import { AREA_PER_RUOLO, COOKIE_PER_AREA, ErroreDominio, type AreaSessione, type RuoloUtente } from '@gestilab/shared';
-import { sessioni } from 'gestilab-auth-service/schema';
+import { leggiSessioneAttiva, type UtenteSessione } from 'gestilab-auth-service/lettura';
 
 declare module 'fastify' {
   interface FastifyRequest {
-    utente?: { id: string; ruolo: RuoloUtente };
+    utente?: UtenteSessione;
   }
-}
-
-function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
 }
 
 /**
  * Legge la sessione dallo store condiviso con gestilab-auth-service (la
  * tabella "sessioni", stesso database) — nessuna chiamata di rete verso
- * quel servizio: qui si legge, lì si scrive (login, PIN, TOTP). Richiede
+ * quel servizio: qui si legge, lì si scrive (login, PIN, TOTP). La regola
+ * "quando una sessione è valida" (area, scadenza, utente attivo, ruolo
+ * riletto da utenti — docs/06 § 2.3) vive in gestilab-auth-service/lettura,
+ * condivisa con apps/web: qui solo cookie e contesto tenant. Richiede
  * pluginTenant registrato prima (usa request.tenantId).
- *
- * Il ruolo si rilegge sempre da "utenti", mai dalla sessione: se un admin
- * viene retrocesso o disattivato, la sessione esistente non deve
- * conservare il vecchio ruolo — stesso principio del perimetro dell'AT
- * ricalcolato ad ogni richiesta (docs/06-sicurezza-gdpr.md § 2.3).
  */
 export const pluginSessione = fp(async function pluginSessione(app: FastifyInstance, opts: { db: Db; area: AreaSessione }) {
   app.decorateRequest('utente', undefined);
@@ -46,30 +37,7 @@ export const pluginSessione = fp(async function pluginSessione(app: FastifyInsta
       throw sessioneMancante;
     }
 
-    const tokenHash = hashToken(token);
-    const tenantId = request.tenantId;
-
-    const utente = await withTenant(opts.db, tenantId, async (tx) => {
-      const [sessione] = await tx
-        .select({ utenteId: sessioni.utenteId, area: sessioni.area, scadeIl: sessioni.scadeIl })
-        .from(sessioni)
-        .where(eq(sessioni.tokenHash, tokenHash));
-
-      if (!sessione || sessione.area !== opts.area || sessione.scadeIl.getTime() < Date.now()) {
-        return null;
-      }
-
-      const [riga] = await tx
-        .select({ id: utenti.id, ruolo: utenti.ruolo, attivo: utenti.attivo })
-        .from(utenti)
-        .where(eq(utenti.id, sessione.utenteId));
-
-      if (!riga || !riga.attivo) {
-        return null;
-      }
-
-      return { id: riga.id, ruolo: riga.ruolo };
-    });
+    const utente = await withTenant(opts.db, request.tenantId, (tx) => leggiSessioneAttiva(tx, opts.area, token));
 
     if (!utente) {
       throw sessioneMancante;

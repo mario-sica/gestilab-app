@@ -39,3 +39,8 @@ pnpm-debug.log*
 
 # IDE (JetBrains) — configurazione locale, non versionata
 .idea/
+
+# Playwright: sessione condivisa tra i test e2e, risultati e tracce
+apps/web/e2e/.auth/
+apps/web/test-results/
+apps/web/playwright-report/

@@ -8,7 +8,9 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY apps/worker/package.json apps/worker/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY vendor/gestilab-auth-service/package.json vendor/gestilab-auth-service/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build

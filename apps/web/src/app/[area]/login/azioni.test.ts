@@ -74,6 +74,14 @@ describe('accedi', () => {
     expect(risultato.errore).toBe('Email o password non corretti.');
   });
 
+  it('con 429 (rate limit) spiega di aspettare, non "password sbagliata"', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 429 }));
+
+    const risultato = await accedi({}, datiForm('admin', 'a@esempio.it', 'segreto'));
+
+    expect(risultato.errore).toBe('Troppi tentativi: aspetta un minuto e riprova.');
+  });
+
   it('con un errore del server (500) risponde con un messaggio diverso da quello delle credenziali', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
 

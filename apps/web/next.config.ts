@@ -4,10 +4,10 @@ const nextConfig: NextConfig = {
   // build standalone: la immagine runner del Dockerfile copia solo
   // .next/standalone + .next/static, senza reinstallare le dipendenze.
   output: 'standalone',
-  // @gestilab/db e @gestilab/shared sono pacchetti del workspace senza un
-  // proprio step di build (restano sorgente TypeScript, vedi task 0.1/0.3):
+  // @gestilab/db, @gestilab/shared e gestilab-auth-service (lettura sessione,
+  // schema) sono pacchetti del workspace senza un proprio step di build (restano sorgente TypeScript, vedi task 0.1/0.3):
   // Next deve transpilarli lui, non aspettarsi JS già pronto in node_modules.
-  transpilePackages: ['@gestilab/db', '@gestilab/shared'],
+  transpilePackages: ['@gestilab/db', '@gestilab/shared', 'gestilab-auth-service'],
   webpack: (config) => {
     // I moduli di @gestilab/db e @gestilab/shared usano estensioni .js negli
     // import relativi (richiesto da Node/tsx/vitest in ESM per file .ts, vedi

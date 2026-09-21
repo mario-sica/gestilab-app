@@ -15,6 +15,9 @@ allowBuilds:
   # l'install se uno script di build non è esplicitamente ammesso.
   msgpackr-extract: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@tanstack/query-core@5.103.2'
+  - '@tanstack/react-query@5.103.2'
 # postcss@8.4.31 (vulnerabilità alta, GHSA-6g55-p6wh-862q e GHSA-r28c-9q8g-f849)
 # è una dipendenza interna di next@15.5.25, non nostra: senza questo override
 # resta usata così com'è finché Next non aggiorna la propria dipendenza.

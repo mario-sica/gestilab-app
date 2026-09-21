@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq, isNotNull } from 'drizzle-orm';
 import { withTenant, type Db } from '@gestilab/db';
 import { istituti, utenti } from '@gestilab/db/schema';
-import { ErroreDominio, type NuovoInvitoUtente } from '@gestilab/shared';
+import { ErroreDominio, type NuovoInvitoUtente, type UtenteElenco } from '@gestilab/shared';
 
 // Unico posto del modulo che parla con Drizzle (docs/04-convenzioni-codice.md
 // § moduli). Ogni accesso a utenti passa da withTenant: RLS + app.tenant_id,
@@ -43,4 +43,26 @@ export async function trovaIstituto(db: Db, id: string): Promise<{ slug: string;
     throw new ErroreDominio('TENANT_NON_TROVATO', 'Istituto non trovato.', 404);
   }
   return riga;
+}
+
+// Elenco completo, ordinato per cognome/nome: gli utenti di un istituto
+// sono decine (admin, AT, supervisore), non migliaia — nessuna paginazione
+// qui (docs/03-api.md: si definisce con la prima lista aperta, gli asset).
+export async function elencaUtenti(db: Db, tenantId: string): Promise<UtenteElenco[]> {
+  return withTenant(db, tenantId, async (tx) => {
+    const righe = await tx
+      .select({
+        id: utenti.id,
+        email: utenti.email,
+        nome: utenti.nome,
+        cognome: utenti.cognome,
+        ruolo: utenti.ruolo,
+        attivo: utenti.attivo,
+        passwordImpostata: isNotNull(utenti.passwordHash),
+        ultimoAccesso: utenti.ultimoAccesso,
+      })
+      .from(utenti)
+      .orderBy(asc(utenti.cognome), asc(utenti.nome));
+    return righe.map((r) => ({ ...r, passwordImpostata: Boolean(r.passwordImpostata), ultimoAccesso: r.ultimoAccesso?.toISOString() ?? null }));
+  });
 }
