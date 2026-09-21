@@ -64,8 +64,14 @@ export async function accedi(_statoPrecedente: StatoLogin, formData: FormData): 
   if (!risposta.ok) {
     // Stesso messaggio generico per email inesistente, password sbagliata o
     // ruolo non valido per l'area (gestilab-auth-service li tratta già allo
-    // stesso modo, per non rivelare quale caso si è verificato). Un errore
-    // 5xx è distinto: non è un problema delle credenziali dell'utente.
+    // stesso modo, per non rivelare quale caso si è verificato). Un 429 è
+    // il rate limit (5 tentativi/min per IP): dire "password sbagliata"
+    // a chi ha appena inserito quella giusta lo manderebbe in confusione —
+    // trovato con la suite e2e, che di login ne fa parecchi. Un 5xx è un
+    // problema del servizio, non delle credenziali.
+    if (risposta.status === 429) {
+      return { errore: 'Troppi tentativi: aspetta un minuto e riprova.' };
+    }
     return risposta.status >= 500 ? erroreServizio : { errore: 'Email o password non corretti.' };
   }
 

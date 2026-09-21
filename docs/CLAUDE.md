@@ -58,9 +58,9 @@ Conseguenze operative, valide sempre:
 pnpm dev                 # profilo dev: http://dellaquila.localhost:3000, hot reload
 pnpm local-prod          # profilo local-prod: https://dellaquila.gestilab.test, immagini buildate
 pnpm db:migrate          # migrazioni Drizzle nel container api
-pnpm db:seed             # dati demo (istituto "dellaquila", 2 lab, 30 asset)
+pnpm db:seed             # dati demo (istituto "dellaquila", 2 lab, 30 asset); utenti admin@… e at@… con password "GestiLabDemo2026!"
 pnpm test                # unit + integrazione (Vitest)
-pnpm e2e                 # Playwright
+pnpm e2e                 # Playwright (apps/web/e2e) contro lo stack dev già avviato con pnpm dev:auth
 pnpm lint && pnpm typecheck
 ```
 ```bash

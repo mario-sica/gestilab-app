@@ -18,6 +18,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "e2e": "pnpm --filter @gestilab/web exec playwright test",
     "format": "prettier --write ."
   },
   "devDependencies": {
