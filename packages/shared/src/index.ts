@@ -9,3 +9,6 @@ export { ErroreDominio } from './errori.js';
 
 export { AREE_SESSIONE, COOKIE_PER_AREA, eAreaSessione } from './sessione.js';
 export type { AreaSessione } from './sessione.js';
+
+export { AREA_PER_RUOLO, RUOLI_PER_AREA, RUOLI_UTENTE, eRuoloUtente } from './ruoli.js';
+export type { RuoloUtente } from './ruoli.js';

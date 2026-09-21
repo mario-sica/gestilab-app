@@ -16,6 +16,11 @@ Ogni errore, di qualunque tipo, risponde con lo stesso payload:
 
 - `codice`: stringa stabile in `SCREAMING_SNAKE_CASE`, pensata per essere confrontata nel codice (mai per il parsing del messaggio).
 - `messaggio`: testo in italiano per l'utente finale o per il log; può cambiare, non va confrontato a stringa.
+- `dettagli` (opzionale): oggetto con dati strutturati per il client, presente solo quando il codice lo prevede (la tabella sotto dice quali). Mai informazioni interne: ciò che sta qui arriva al browser così com'è.
+
+```json
+{ "errore": { "codice": "RUOLO_NON_VALIDO", "messaggio": "Non hai i permessi per questa azione.", "dettagli": { "areaCorretta": "admin" } } }
+```
 
 Realizzato da `apps/api/src/plugin/errori.ts` (`setErrorHandler` centrale): ogni `ErroreDominio` (`packages/shared/src/errori.ts`, con `codice` e `statusHttp` propri) produce questa forma automaticamente. Un errore non previsto risponde `500` con `codice: "ERRORE_INTERNO"` e un messaggio generico: mai stack trace o dettagli interni nella risposta, quello resta solo nel log strutturato del server.
 
@@ -23,9 +28,12 @@ Realizzato da `apps/api/src/plugin/errori.ts` (`setErrorHandler` centrale): ogni
 |---|---|---|
 | `RICHIESTA_NON_VALIDA` | 400 | Corpo/query/parametri che non passano lo schema Zod della rotta |
 | `TENANT_MANCANTE` | 400 | Header `X-Tenant-Slug` assente su una rotta che lo richiede |
+| `SESSIONE_MANCANTE` | 401 | Cookie di sessione dell'area assente, sconosciuto, scaduto, di un'altra area o di un utente disattivato — sempre lo stesso codice, non si distingue il caso |
+| `RUOLO_NON_VALIDO` | 403 | Sessione valida ma ruolo non ammesso dalla rotta. `dettagli.areaCorretta` (`admin` \| `tecnico`) è l'area a cui il ruolo appartiene (`AREA_PER_RUOLO`, `packages/shared`): `apps/web` la usa per mostrare il link all'area giusta, non un redirect al login (`docs/02-architettura.md` § Aree) |
 | `TENANT_NON_TROVATO` | 404 | Slug riservato, malformato, o nessun istituto attivo con quello slug |
 | `RISORSA_NON_TROVATA` | 404 | Rotta inesistente |
 | `TROPPE_RICHIESTE` | 429 | Limite di frequenza superato |
+| `CONTESTO_MANCANTE` | 500 | Errore di programmazione: `pluginSessione` registrato senza `pluginTenant` prima |
 | `ERRORE_INTERNO` | 500 | Qualunque errore non previsto |
 
 Ogni nuovo modulo che introduce i propri codici (`ASSET_NON_TROVATO`, `SEGNALAZIONE_GIA_CHIUSA`, ecc.) li aggiunge a questa tabella nello stesso commit.

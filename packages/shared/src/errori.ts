@@ -5,11 +5,16 @@
 export class ErroreDominio extends Error {
   readonly codice: string;
   readonly statusHttp: number;
+  // Dati strutturati opzionali che il client può usare (docs/03-api.md §
+  // Formato di errore), es. l'area corretta su un 403 di ruolo. Mai
+  // dettagli interni: finiscono nella risposta HTTP così come sono.
+  readonly dettagli: Readonly<Record<string, unknown>> | undefined;
 
-  constructor(codice: string, messaggio: string, statusHttp: number) {
+  constructor(codice: string, messaggio: string, statusHttp: number, dettagli?: Readonly<Record<string, unknown>>) {
     super(messaggio);
     this.name = 'ErroreDominio';
     this.codice = codice;
     this.statusHttp = statusHttp;
+    this.dettagli = dettagli;
   }
 }

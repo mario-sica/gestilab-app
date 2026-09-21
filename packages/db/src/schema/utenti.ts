@@ -1,13 +1,16 @@
 import { boolean, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { RUOLI_UTENTE } from '@gestilab/shared';
 
 import { istituti } from './istituti.js';
 import { policyIsolamentoTenant } from './_rls.js';
 
 // docs/01-dominio.md — Gruppo A — utenti (admin/AT/supervisore, non i
 // docenti: quelli sono "persone"). 2FA obbligatoria per ruolo admin: regola
-// applicativa, non un vincolo di schema.
+// applicativa, non un vincolo di schema. I valori vengono da
+// packages/shared (RUOLI_UTENTE), che è anche dove vive la mappa
+// ruolo → area: una lista sola, non due da tenere allineate.
 
-export const utenteRuolo = pgEnum('utente_ruolo', ['admin', 'at', 'supervisore']);
+export const utenteRuolo = pgEnum('utente_ruolo', RUOLI_UTENTE);
 
 export const utenti = pgTable(
   'utenti',

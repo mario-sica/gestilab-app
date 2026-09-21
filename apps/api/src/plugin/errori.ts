@@ -2,13 +2,19 @@ import type { FastifyError, FastifyInstance } from 'fastify';
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 import { ErroreDominio } from '@gestilab/shared';
 
-// docs/03-api.md: ogni errore risponde { errore: { codice, messaggio } }.
-// Nessuno stack, nessun dettaglio interno: quello va solo nel log.
+// docs/03-api.md: ogni errore risponde { errore: { codice, messaggio } },
+// più "dettagli" solo quando l'ErroreDominio ne porta (dati per il client,
+// es. areaCorretta su un 403). Nessuno stack, nessun dettaglio interno:
+// quello va solo nel log.
 export function pluginErrori(app: FastifyInstance): void {
   app.setErrorHandler((errore: FastifyError | ErroreDominio, richiesta, risposta) => {
     if (errore instanceof ErroreDominio) {
       void risposta.status(errore.statusHttp).send({
-        errore: { codice: errore.codice, messaggio: errore.message },
+        errore: {
+          codice: errore.codice,
+          messaggio: errore.message,
+          ...(errore.dettagli ? { dettagli: errore.dettagli } : {}),
+        },
       });
       return;
     }
