@@ -19,6 +19,11 @@ env:
   POSTGRES_DB: gestilab
   DATABASE_URL: postgres://gestilab_app:gestilab_app_ci_password@localhost:5432/gestilab
   DATABASE_MIGRATE_URL: postgres://gestilab:gestilab_ci_password@localhost:5432/gestilab
+  # gestilab-auth-service non gira come servizio HTTP in CI (solo le sue
+  # migrazioni/test diretti sul database, vedi sotto): nessuna richiesta
+  # reale la raggiunge davvero, i test della Server Action di login
+  # mockano fetch. Valore solo per soddisfare lo schema di leggiEnv().
+  AUTH_SERVICE_URL: http://localhost:3002
   REDIS_URL: redis://localhost:6379
   S3_ENDPOINT: http://localhost:9000
   S3_BUCKET: gestilab-ci
