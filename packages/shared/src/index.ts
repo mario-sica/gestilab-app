@@ -6,3 +6,6 @@ export type { Env } from './env.js';
 export { leggiEnv } from './env.js';
 
 export { ErroreDominio } from './errori.js';
+
+export { AREE_SESSIONE, COOKIE_PER_AREA, eAreaSessione } from './sessione.js';
+export type { AreaSessione } from './sessione.js';

@@ -5,6 +5,11 @@ const schemaEnv = z.object({
   API_PORT: z.coerce.number().int().positive(),
   API_HOST: z.string().min(1),
   DATABASE_URL: z.string().min(1),
+  // URL interno (rete Docker) del servizio gestilab-auth-service — sempre
+  // presente in .env, anche quando il profilo Compose "auth" non è in
+  // esecuzione (in quel caso la chiamata fallisce a runtime, non all'avvio:
+  // vedi il documento di riferimento, sezione sull'integrazione).
+  AUTH_SERVICE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   S3_ENDPOINT: z.string().min(1),
   S3_BUCKET: z.string().min(1),
