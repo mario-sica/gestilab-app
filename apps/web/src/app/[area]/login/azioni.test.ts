@@ -20,8 +20,9 @@ vi.mock('next/navigation', () => ({
 
 const { accedi } = await import('./azioni.js');
 
-function datiForm(email?: string, password?: string): FormData {
+function datiForm(area: string, email?: string, password?: string): FormData {
   const dati = new FormData();
+  dati.set('area', area);
   if (email !== undefined) {
     dati.set('email', email);
   }
@@ -37,10 +38,19 @@ describe('accedi', () => {
     mockHeadersGet.mockReturnValue('istituto-test-id');
   });
 
+  it('con un\'area sconosciuta nel form risponde con un errore, senza chiamare gestilab-auth-service', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+
+    const risultato = await accedi({}, datiForm('docente', 'a@esempio.it', 'segreto'));
+
+    expect(risultato.errore).toBe('Area non valida.');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('senza email o password non chiama gestilab-auth-service', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch');
 
-    const risultato = await accedi('admin', {}, datiForm('', ''));
+    const risultato = await accedi({}, datiForm('admin', '', ''));
 
     expect(risultato.errore).toBeTruthy();
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -50,7 +60,7 @@ describe('accedi', () => {
     mockHeadersGet.mockReturnValue(null);
     const fetchSpy = vi.spyOn(global, 'fetch');
 
-    const risultato = await accedi('admin', {}, datiForm('a@esempio.it', 'segreto'));
+    const risultato = await accedi({}, datiForm('admin', 'a@esempio.it', 'segreto'));
 
     expect(risultato.errore).toBe('Istituto non riconosciuto.');
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -59,7 +69,7 @@ describe('accedi', () => {
   it('con credenziali sbagliate (401) risponde con un messaggio generico', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 401 }));
 
-    const risultato = await accedi('admin', {}, datiForm('a@esempio.it', 'segreto'));
+    const risultato = await accedi({}, datiForm('admin', 'a@esempio.it', 'segreto'));
 
     expect(risultato.errore).toBe('Email o password non corretti.');
   });
@@ -67,9 +77,18 @@ describe('accedi', () => {
   it('con un errore del server (500) risponde con un messaggio diverso da quello delle credenziali', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 500 }));
 
-    const risultato = await accedi('admin', {}, datiForm('a@esempio.it', 'segreto'));
+    const risultato = await accedi({}, datiForm('admin', 'a@esempio.it', 'segreto'));
 
     expect(risultato.errore).toBe('Si è verificato un errore. Riprova più tardi.');
+  });
+
+  it('se gestilab-auth-service è irraggiungibile (fetch lancia) risponde con lo stesso messaggio del 500', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(new TypeError('fetch failed'));
+
+    const risultato = await accedi({}, datiForm('admin', 'a@esempio.it', 'segreto'));
+
+    expect(risultato.errore).toBe('Si è verificato un errore. Riprova più tardi.');
+    expect(mockCookiesSet).not.toHaveBeenCalled();
   });
 
   it('con credenziali corrette imposta il cookie giusto per l\'area e reindirizza', async () => {
@@ -78,7 +97,7 @@ describe('accedi', () => {
       new Response(JSON.stringify({ token: 'il-token', scadeIl }), { status: 200 }),
     );
 
-    await accedi('tecnico', {}, datiForm('a@esempio.it', 'segreto'));
+    await accedi({}, datiForm('tecnico', 'a@esempio.it', 'segreto'));
 
     expect(mockCookiesSet).toHaveBeenCalledWith(
       'gl_s_tec',
@@ -94,7 +113,7 @@ describe('accedi', () => {
       .spyOn(global, 'fetch')
       .mockResolvedValue(new Response(JSON.stringify({ token: 't', scadeIl: new Date().toISOString() }), { status: 200 }));
 
-    await accedi('admin', {}, datiForm('mario@esempio.it', 'segreto'));
+    await accedi({}, datiForm('admin', 'mario@esempio.it', 'segreto'));
 
     const [, opzioni] = fetchSpy.mock.calls[0]!;
     const corpo = JSON.parse((opzioni as RequestInit).body as string) as Record<string, string>;
