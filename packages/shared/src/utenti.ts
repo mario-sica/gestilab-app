@@ -15,3 +15,19 @@ export const schemaNuovoInvitoUtente = z.object({
 });
 
 export type NuovoInvitoUtente = z.infer<typeof schemaNuovoInvitoUtente>;
+
+// Riga dell'elenco utenti (GET /api/v1/admin/utenti): mai password_hash né
+// segreti, solo ciò che la pagina /admin/utenti mostra. "invitato" = ha
+// ancora la password da impostare (password_hash NULL).
+export const schemaUtenteElenco = z.object({
+  id: z.string().uuid(),
+  email: z.string(),
+  nome: z.string(),
+  cognome: z.string(),
+  ruolo: z.enum(RUOLI_UTENTE),
+  attivo: z.boolean(),
+  passwordImpostata: z.boolean(),
+  ultimoAccesso: z.string().nullable(),
+});
+
+export type UtenteElenco = z.infer<typeof schemaUtenteElenco>;

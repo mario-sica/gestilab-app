@@ -30,6 +30,7 @@ let istitutoId: string;
 let slug: string;
 let adminId: string;
 const creaInvito = vi.fn<(istitutoId: string, utenteId: string) => Promise<{ token: string; scadeIl: Date }>>();
+const rigeneraPinIstituto = vi.fn();
 const accoda = vi.fn<(job: JobEmail) => Promise<void>>();
 
 async function creaApp() {
@@ -42,7 +43,7 @@ async function creaApp() {
     async (admin) => {
       await admin.register(pluginTenant, { db });
       await admin.register(pluginSessione, { db, area: 'admin' });
-      await admin.register(rotteAdminUtenti, { db, env, authService: { creaInvito }, codaEmail: { accoda } });
+      await admin.register(rotteAdminUtenti, { db, env, authService: { creaInvito, rigeneraPinIstituto }, codaEmail: { accoda } });
     },
     { prefix: '/api/v1/admin' },
   );
@@ -88,6 +89,35 @@ afterEach(async () => {
 });
 
 const corpo = { email: 'Nuova.Persona@Esempio.test', nome: 'Nuova', cognome: 'Persona', ruolo: 'at' };
+
+describe('GET /api/v1/admin/utenti', () => {
+  it('elenca gli utenti dell’istituto ordinati per cognome, con passwordImpostata e senza hash', async () => {
+    await withTenant(db, istitutoId, (tx) =>
+      tx.insert(utenti).values({ istitutoId, email: 'at@esempio.test', nome: 'Anna', cognome: 'Bianchi', ruolo: 'at', passwordHash: '$argon2id$finto' }),
+    );
+    const app = await creaApp();
+    const token = await sessioneAdmin();
+
+    const risposta = await app.inject({ method: 'GET', url: '/api/v1/admin/utenti', headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` } });
+
+    expect(risposta.statusCode).toBe(200);
+    const elenco = risposta.json();
+    expect(elenco.map((u: { cognome: string }) => u.cognome)).toEqual(['Bianchi', 'Prova']);
+    expect(elenco[0]).toMatchObject({ email: 'at@esempio.test', ruolo: 'at', attivo: true, passwordImpostata: true, ultimoAccesso: null });
+    expect(elenco[1]).toMatchObject({ email: 'admin@esempio.test', passwordImpostata: false });
+    expect(risposta.body).not.toContain('argon2');
+  });
+
+  it('un supervisore può leggere l’elenco', async () => {
+    await withTenant(db, istitutoId, (tx) => tx.update(utenti).set({ ruolo: 'supervisore' }).where(eq(utenti.id, adminId)));
+    const app = await creaApp();
+    const token = await sessioneAdmin();
+
+    const risposta = await app.inject({ method: 'GET', url: '/api/v1/admin/utenti', headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` } });
+
+    expect(risposta.statusCode).toBe(200);
+  });
+});
 
 describe('POST /api/v1/admin/utenti/inviti', () => {
   it('crea l’utente senza password, chiede il token all’auth-service e accoda l’email con il link del tenant', async () => {
