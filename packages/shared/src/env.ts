@@ -2,6 +2,16 @@ import { z } from 'zod';
 
 const schemaEnv = z.object({
   BASE_DOMAIN: z.string().min(1),
+  // Protocollo e porta con cui il browser raggiunge apps/web: insieme a
+  // BASE_DOMAIN e allo slug del tenant compongono un URL assoluto (link
+  // email, QR) — vedi origineTenant in url-pubblico.ts. In sviluppo
+  // http + 3000; dietro Traefik https senza porta (WEB_PORTA vuota).
+  WEB_PROTOCOLLO: z.enum(['http', 'https']),
+  WEB_PORTA: z
+    .string()
+    .optional()
+    .transform((valore) => (valore ? Number(valore) : undefined))
+    .pipe(z.number().int().positive().optional()),
   API_PORT: z.coerce.number().int().positive(),
   API_HOST: z.string().min(1),
   DATABASE_URL: z.string().min(1),
@@ -14,6 +24,8 @@ const schemaEnv = z.object({
   S3_ENDPOINT: z.string().min(1),
   S3_BUCKET: z.string().min(1),
   SMTP_URL: z.string().min(1),
+  // Mittente delle email transazionali (apps/worker), es. "GestiLab <noreply@dominio>".
+  EMAIL_MITTENTE: z.string().min(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 

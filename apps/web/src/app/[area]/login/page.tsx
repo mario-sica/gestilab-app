@@ -10,8 +10,10 @@ export const metadata: Metadata = {
 
 export default async function PaginaLogin({
   params,
+  searchParams,
 }: {
   params: Promise<{ area: string }>;
+  searchParams: Promise<{ invito?: string }>;
 }): Promise<React.JSX.Element> {
   const { area } = await params;
 
@@ -19,5 +21,11 @@ export default async function PaginaLogin({
     notFound();
   }
 
-  return <ModuloLogin area={area} />;
+  // ?invito=ok: arrivo da /invito/[token] dopo aver impostato la password
+  // (task 1.3). Solo un messaggio di conferma, nessun dato: chi lo aggiunge
+  // a mano all'URL vede una frase innocua.
+  const { invito } = await searchParams;
+  const messaggio = invito === 'ok' ? 'Password impostata. Ora puoi accedere.' : undefined;
+
+  return <ModuloLogin area={area} {...(messaggio ? { messaggio } : {})} />;
 }

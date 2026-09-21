@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import { costruisciApp } from './app.js';
 
-// Integrazione: richiede il servizio "redis" del profilo dev in esecuzione
-// (usato dal plugin rate-limit).
-const redisUrl = process.env.REDIS_URL;
-if (!redisUrl) {
-  throw new Error('REDIS_URL non impostata: avvia "pnpm dev" prima di eseguire questo test.');
-}
+import { leggiEnv } from '@gestilab/shared';
+
+// Integrazione: richiede "redis" e "db" del profilo dev in esecuzione
+// (rate limit, coda email, connessione dei moduli). L'ambiente completo
+// viene da leggiEnv(), come in server.ts.
+const env = leggiEnv();
 
 describe('app', () => {
   it('/api/v1/salute risponde ok', async () => {
-    const app = await costruisciApp({ LOG_LEVEL: 'error', REDIS_URL: redisUrl });
+    const app = await costruisciApp({ ...env, LOG_LEVEL: 'error' });
 
     const risposta = await app.inject({ method: 'GET', url: '/api/v1/salute' });
 
@@ -20,7 +20,7 @@ describe('app', () => {
   });
 
   it('genera uno spec OpenAPI valido su /documentazione/json', async () => {
-    const app = await costruisciApp({ LOG_LEVEL: 'error', REDIS_URL: redisUrl });
+    const app = await costruisciApp({ ...env, LOG_LEVEL: 'error' });
 
     const risposta = await app.inject({ method: 'GET', url: '/documentazione/json' });
 

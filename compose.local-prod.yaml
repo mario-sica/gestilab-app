@@ -51,3 +51,13 @@ services:
     image: gestilab-api-local-prod
     environment:
       BASE_DOMAIN: ${BASE_DOMAIN}
+      # Dietro Traefik: https sulla 443, nessuna porta nell'URL pubblico.
+      WEB_PROTOCOLLO: https
+      WEB_PORTA: ""
+
+  worker:
+    image: gestilab-api-local-prod
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN}
+      WEB_PROTOCOLLO: https
+      WEB_PORTA: ""

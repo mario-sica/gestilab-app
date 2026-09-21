@@ -64,6 +64,23 @@ services:
       mailpit:
         condition: service_healthy
 
+  # Consumatore della coda BullMQ "email" (docs/02-architettura.md §
+  # Servizi): stessa immagine di api, solo il comando cambia. Nessuna porta,
+  # nessuna label Traefik: non riceve richieste, legge da Redis e scrive
+  # sull'SMTP (Mailpit in locale).
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - .env
+    command: ["pnpm", "--filter", "@gestilab/worker", "exec", "tsx", "src/index.ts"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+
   db:
     image: postgres:16-alpine
     env_file:
