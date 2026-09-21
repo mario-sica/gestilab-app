@@ -13,12 +13,14 @@ const TITOLO_PER_AREA: Record<AreaSessione, string> = {
 const STATO_INIZIALE: StatoLogin = {};
 
 export function ModuloLogin({ area }: { area: AreaSessione }): React.JSX.Element {
-  const [stato, azione, inCorso] = useActionState(accedi.bind(null, area), STATO_INIZIALE);
+  // Niente accedi.bind(null, area): vedi il commento in azioni.ts.
+  const [stato, azione, inCorso] = useActionState(accedi, STATO_INIZIALE);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
       <h1 className="text-2xl font-semibold">{TITOLO_PER_AREA[area]}</h1>
       <form action={azione} className="flex w-full max-w-sm flex-col gap-4">
+        <input type="hidden" name="area" value={area} />
         <label className="flex flex-col gap-1">
           <span className="text-sm font-medium">Email</span>
           <input
