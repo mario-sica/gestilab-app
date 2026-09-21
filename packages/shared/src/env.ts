@@ -20,6 +20,10 @@ const schemaEnv = z.object({
   // esecuzione (in quel caso la chiamata fallisce a runtime, non all'avvio:
   // vedi il documento di riferimento, sezione sull'integrazione).
   AUTH_SERVICE_URL: z.string().min(1),
+  // URL interno (rete Docker) di apps/api, per apps/web: Server Component e
+  // Server Action lo chiamano direttamente, il proxy app/api/[...proxy] lo
+  // usa per i client component. Mai raggiunto dal browser.
+  API_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   S3_ENDPOINT: z.string().min(1),
   S3_BUCKET: z.string().min(1),

@@ -1,5 +1,7 @@
-import { creaClient, trovaIstitutoAttivoDaSlug, type Db } from '@gestilab/db';
-import { eSlugRiservato, formatoSlugValido, leggiEnv } from '@gestilab/shared';
+import { trovaIstitutoAttivoDaSlug } from '@gestilab/db';
+import { eSlugRiservato, formatoSlugValido } from '@gestilab/shared';
+
+import { ottieniDb } from './db.js';
 
 // Risoluzione tenant da host (docs/02-architettura.md § Risoluzione del
 // tenant): estrae lo slug dal primo segmento dell'host, esclude i riservati,
@@ -14,12 +16,6 @@ interface VoceCache {
 }
 
 const cache = new Map<string, VoceCache>();
-
-let db: Db | null = null;
-function ottieniDb(): Db {
-  db ??= creaClient(leggiEnv().DATABASE_URL);
-  return db;
-}
 
 const REGEX_IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
 

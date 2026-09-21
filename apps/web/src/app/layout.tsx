@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import './globals.css';
+import { ProviderQuery } from '../componenti/provider-query.js';
 
 export const metadata: Metadata = {
   title: 'GestiLab',
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>): React.JSX.Element {
   return (
     <html lang="it">
-      <body>{children}</body>
+      <body>
+        <ProviderQuery>{children}</ProviderQuery>
+      </body>
     </html>
   );
 }

@@ -7,11 +7,15 @@ import { RUOLI_UTENTE } from './ruoli.js';
 // apps/web (docs/CLAUDE.md regola 8: uno schema solo). trim + lowercase
 // sull'email prima dell'unicità per istituto, così "Mario@x.it" e
 // "mario@x.it" non diventano due utenti.
+// Messaggi in italiano nello schema stesso: sono quelli che l'utente vede
+// nel form (React Hook Form + resolver Zod), e l'API risponde comunque
+// RICHIESTA_NON_VALIDA senza esporli — un solo posto per la regola e per
+// la frase.
 export const schemaNuovoInvitoUtente = z.object({
-  email: z.string().trim().toLowerCase().email(),
-  nome: z.string().trim().min(1).max(100),
-  cognome: z.string().trim().min(1).max(100),
-  ruolo: z.enum(RUOLI_UTENTE),
+  email: z.string().trim().toLowerCase().email('Inserisci un indirizzo email valido.'),
+  nome: z.string().trim().min(1, 'Inserisci il nome.').max(100, 'Massimo 100 caratteri.'),
+  cognome: z.string().trim().min(1, 'Inserisci il cognome.').max(100, 'Massimo 100 caratteri.'),
+  ruolo: z.enum(RUOLI_UTENTE, 'Scegli un ruolo.'),
 });
 
 export type NuovoInvitoUtente = z.infer<typeof schemaNuovoInvitoUtente>;
