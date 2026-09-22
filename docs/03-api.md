@@ -95,7 +95,7 @@ Query: `pagina` (default 1), `perPagina` (default 50, max 100), `ambienteId?`, `
 
 ### `POST /api/v1/tecnico/asset` — crea
 
-Corpo: `schemaNuovoAsset`. `ambienteId` deve essere nel perimetro dell'AT (altrimenti `404 ASSET_NON_TROVATO`, non 403: non si conferma nemmeno che l'ambiente esiste fuori dal proprio perimetro). `codice_breve`/`qr_token` generati dal server (`packages/db/src/codici-asset.ts` — generazione minima, l'algoritmo definitivo con tutte le garanzie del contratto è task 2.3). `stato` parte sempre `attivo`. Se `parentAssetId` è indicato, deve riferirsi a un asset dello stesso istituto e senza a sua volta un parent (profondità massima 1, docs/01-dominio.md). Risponde `201 Asset`.
+Corpo: `schemaNuovoAsset`. `ambienteId` deve essere nel perimetro dell'AT (altrimenti `404 ASSET_NON_TROVATO`, non 403: non si conferma nemmeno che l'ambiente esiste fuori dal proprio perimetro). `codice_breve`/`qr_token` generati dal server (`packages/db/src/codici-asset.ts`, task 2.1/2.3: 6 caratteri senza ambiguità e 22 char base64url, retry su collisione). `stato` parte sempre `attivo`. Se `parentAssetId` è indicato, deve riferirsi a un asset dello stesso istituto e senza a sua volta un parent (profondità massima 1, docs/01-dominio.md). Risponde `201 Asset`.
 
 ### `PATCH /api/v1/tecnico/asset/:id` — modifica
 
@@ -105,11 +105,27 @@ Corpo: `schemaModificaAsset` (tutti i campi opzionali tranne almeno uno). **Non 
 
 Soft delete: valorizza `eliminato_il`, non cancella la riga (docs/01-dominio.md: asset è una delle due sole tabelle con soft delete). `404 ASSET_NON_TROVATO` se fuori perimetro o già eliminato. Risponde `204`.
 
+## Area pubblica: `/api/v1/pubblico/*` (task 2.3)
+
+Contesto Fastify dedicato, come `/docente/*`: solo `pluginTenant`, **nessuna sessione**. La superficie più esposta del sistema (docs/CLAUDE.md regola non negoziabile 6, docs/06-sicurezza-gdpr.md § 2.5): dietro la pagina web `/q/{token}` (docs/02-architettura.md § Routing) raggiunta scansionando il QR stampato su un'etichetta, o digitando il codice breve quando il QR non è leggibile.
+
+Risponde sempre `schemaAssetPubblico` (`packages/shared`): `etichetta`, `tipoAsset`, `categoria`, `marca`, `modello`, `ambiente`, `stato` — **mai** `seriale`, `numero_inventario`, `valore_acquisto`, fornitore/contratto, date, `attributi`: nessun dato patrimoniale o interno, solo ciò che conferma "hai inquadrato il bene giusto ed è in questo stato". Ogni risposta ha `Cache-Control: no-store`.
+
+`404 ASSET_NON_TROVATO` per **qualunque** motivo il bene non sia mostrabile — token/codice inesistente, asset soft-eliminato, `pagina_pubblica_attiva = false`, istituto non attivo (quest'ultimo caso non arriva nemmeno qui: `pluginTenant` risponde già `404 TENANT_NON_TROVATO` prima) — stesso principio del perimetro AT: non distinguere "non esiste" da "esiste ma non è visibile".
+
+### `GET /api/v1/pubblico/asset/qr/:token` — risoluzione da scansione QR
+
+Rate limit per **token**, non per IP (quello lo copre già il limite globale sotto): 60/min. Una classe che scansiona lo stesso QR da telefoni diversi in pochi minuti non deve bloccarsi a vicenda; uno scraping aggressivo sullo stesso bene sì.
+
+### `GET /api/v1/pubblico/asset/codice-breve/:codice` — risoluzione da codice a 6 caratteri
+
+Come sopra ma 20/min: il codice breve ha molta meno entropia del `qr_token` (docs/01-dominio.md), un limite più stretto scoraggia un tentativo per esaurimento. Il codice è normalizzato a maiuscolo lato server (l'alfabeto di generazione lo è).
+
 ## Rate limit
 
 `@fastify/rate-limit` con store Redis (non in-memory: l'API deve reggere più repliche in futuro senza cambiare codice). Soglia globale di default: 100 richieste/minuto per IP. Header di risposta standard (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`) su ogni richiesta. Oltre soglia: `429 TROPPE_RICHIESTE`.
 
-Endpoint pubblici sensibili (`/q/{token}`, `docs/06-sicurezza-gdpr.md` § 2.5) avranno una soglia propria, più stretta, quando verranno creati — sovrascrivendo il default per quella rotta, non cambiando il default globale.
+Gli endpoint pubblici sensibili (`/pubblico/asset/*`, sopra) hanno una soglia propria, più stretta e per chiave diversa (il token/codice, non l'IP) — sovrascrivendo il default per quella rotta, non cambiando il default globale.
 
 ## Logging
 

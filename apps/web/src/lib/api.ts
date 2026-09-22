@@ -37,6 +37,24 @@ export async function chiamaApi<T>(area: AreaSessione, percorso: string, init: R
   return (await risposta.json()) as T;
 }
 
+// Come chiamaApi, ma senza cookie: per le rotte pubbliche (/api/v1/pubblico/*,
+// /api/v1/docente/persone), che non hanno un'area/sessione da leggere.
+export async function chiamaApiPubblica<T>(percorso: string): Promise<T> {
+  const env = leggiEnv();
+  const slug = (await headers()).get('x-tenant-slug');
+
+  const intestazioni = new Headers({ accept: 'application/json' });
+  if (slug) {
+    intestazioni.set('x-tenant-slug', slug);
+  }
+
+  const risposta = await fetch(`${env.API_URL}${percorso}`, { headers: intestazioni, cache: 'no-store' });
+  if (!risposta.ok) {
+    throw await erroreDaRisposta(risposta);
+  }
+  return (await risposta.json()) as T;
+}
+
 export async function erroreDaRisposta(risposta: Response): Promise<ErroreDominio> {
   const corpo = (await risposta.json().catch(() => null)) as {
     errore?: { codice?: string; messaggio?: string; dettagli?: Record<string, unknown> };

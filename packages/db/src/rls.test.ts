@@ -91,12 +91,17 @@ describe('RLS — isolamento tenant su asset', () => {
     expect(righe).toHaveLength(0);
   });
 
-  it('con contesto tenant vede solo gli asset del proprio istituto (30 dal seed)', async () => {
+  it('con contesto tenant vede solo gli asset del proprio istituto (almeno i 30 del seed)', async () => {
+    // >= e non === 30: da task 2.2 esiste un vero endpoint di creazione, e
+    // questo database dev è persistente — una verifica manuale o una suite
+    // e2e può aggiungere righe legittime tra un run e l'altro (già successo
+    // una volta). Quello che conta qui è l'isolamento RLS, non il conteggio
+    // esatto del seed.
     const righeDellaquila = await withTenant(db, dellaquilaId, (tx) => tx.select().from(asset));
     const righeDemo = await withTenant(db, demoId, (tx) => tx.select().from(asset));
 
-    expect(righeDellaquila).toHaveLength(30);
-    expect(righeDemo).toHaveLength(30);
+    expect(righeDellaquila.length).toBeGreaterThanOrEqual(30);
+    expect(righeDemo.length).toBeGreaterThanOrEqual(30);
     expect(righeDellaquila.every((riga) => riga.istitutoId === dellaquilaId)).toBe(true);
     expect(righeDemo.every((riga) => riga.istitutoId === demoId)).toBe(true);
   });

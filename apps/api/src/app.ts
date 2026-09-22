@@ -7,6 +7,7 @@ import { VERSIONE_API, type Env } from '@gestilab/shared';
 import { rotteAdminImpostazioni } from './moduli/admin-impostazioni/rotte.js';
 import { rotteAdminUtenti } from './moduli/admin-utenti/rotte.js';
 import { rotteDocente } from './moduli/docente/rotte.js';
+import { rottePubblicoAsset } from './moduli/pubblico-asset/rotte.js';
 import { rotteSalute } from './moduli/salute/rotte.js';
 import { rotteTecnicoAsset } from './moduli/tecnico-asset/rotte.js';
 import { pluginCodaEmail } from './plugin/coda-email.js';
@@ -83,6 +84,16 @@ export async function costruisciApp(env: EnvApp) {
       await tecnico.register(rotteTecnicoAsset, { db });
     },
     { prefix: `/api/${VERSIONE_API}/tecnico` },
+  );
+
+  // Area pubblica: solo tenant dall'header rivalidato, nessuna sessione —
+  // la pagina /q/{token} (task 2.3, docs/02-architettura.md § Routing).
+  await app.register(
+    async (pubblico) => {
+      await pubblico.register(pluginTenant, { db });
+      await pubblico.register(rottePubblicoAsset, { db });
+    },
+    { prefix: `/api/${VERSIONE_API}/pubblico` },
   );
 
   return app;
