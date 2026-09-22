@@ -1,7 +1,7 @@
-import { randomBytes } from 'node:crypto';
 import { and, eq, isNull } from 'drizzle-orm';
 import { leggiEnv } from '@gestilab/shared';
 
+import { generaCodiceBreve, generaQrToken } from './codici-asset.js';
 import { creaClient } from './client.js';
 import { withTenant } from './with-tenant.js';
 import {
@@ -71,18 +71,6 @@ const MIX_ASSET_LABORATORIO = [
   { tipo: 'Switch di rete', marca: 'TP-Link', modello: 'TL-SG1016' },
   { tipo: 'Stampante', marca: 'HP', modello: 'LaserJet Pro M404' },
 ] as const;
-
-// Caratteri senza ambiguità (no O/0, I/1), come da docs/01-dominio.md:
-// generazione minima per il seed, non l'algoritmo definitivo (task 2.3).
-const ALFABETO_CODICE_BREVE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-function generaCodiceBreve(): string {
-  return Array.from({ length: 6 }, () => ALFABETO_CODICE_BREVE[randomBytes(1)[0]! % ALFABETO_CODICE_BREVE.length]).join('');
-}
-
-function generaQrToken(): string {
-  return randomBytes(16).toString('base64url');
-}
 
 const TENANT_DEMO: DatiTenant[] = [
   {

@@ -17,7 +17,7 @@ async function iniettaConSlugESessione(app: App, rotta: RottaSessione, slug: str
   return app.inject({
     method: rotta.metodo,
     url: rotta.url,
-    headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` },
+    headers: { 'x-tenant-slug': slug, cookie: `${rotta.cookie}=${token}` },
     ...(rotta.payload !== undefined ? { payload: rotta.payload } : {}),
   });
 }
@@ -26,7 +26,7 @@ async function iniettaConSlugESessione(app: App, rotta: RottaSessione, slug: str
  * Task 1.7 — suite dedicata e parametrica (docs/04-convenzioni-codice.md §
  * Test: "Sicurezza | suite dedicata in CI | cross-tenant su ogni
  * endpoint"), non sparsa nei test dei singoli moduli: un nuovo endpoint
- * con sessione va aggiunto a ROTTE_SESSIONE_ADMIN, non dimenticato.
+ * con sessione va aggiunto a ROTTE_SESSIONE, non dimenticato.
  *
  * Gira contro l'app VERA (costruisciApp, come app.test.ts), non una
  * ricostruzione parziale per modulo: verifica esattamente ciò che è
@@ -62,6 +62,7 @@ interface Istituto {
   id: string;
   slug: string;
   adminId: string;
+  atId: string;
 }
 
 let istitutoA: Istituto;
@@ -74,25 +75,30 @@ async function creaIstituto(etichetta: string): Promise<Istituto> {
     .values({ slug, codiceMeccanografico: `TEST-CT-${etichetta}-${Date.now()}`, denominazione: `Istituto ${etichetta}`, tipologia: 'liceo' })
     .returning({ id: istituti.id });
   const istitutoId = istituto!.id;
-  const adminId = await withTenant(db, istitutoId, async (tx) => {
+  const { adminId, atId } = await withTenant(db, istitutoId, async (tx) => {
     await tx.insert(anniScolastici).values({ istitutoId, codice: '2026/27', dataInizio: '2026-09-01', dataFine: '2027-08-31', corrente: true });
     const [admin] = await tx
       .insert(utenti)
       .values({ istitutoId, email: `admin@${slug}.test`, nome: 'Admin', cognome: etichetta, ruolo: 'admin' })
       .returning({ id: utenti.id });
-    return admin!.id;
+    const [at] = await tx
+      .insert(utenti)
+      .values({ istitutoId, email: `at@${slug}.test`, nome: 'AT', cognome: etichetta, ruolo: 'at' })
+      .returning({ id: utenti.id });
+    return { adminId: admin!.id, atId: at!.id };
   });
-  return { id: istitutoId, slug, adminId };
+  return { id: istitutoId, slug, adminId, atId };
 }
 
-async function sessioneAdmin(istituto: Istituto): Promise<string> {
+async function sessioneUtente(istituto: Istituto, area: 'admin' | 'tecnico', utenteId: string): Promise<string> {
   const token = randomBytes(32).toString('base64url');
   const tokenHash = createHash('sha256').update(token).digest('hex');
-  await withTenant(db, istituto.id, (tx) =>
-    tx.insert(sessioni).values({ istitutoId: istituto.id, utenteId: istituto.adminId, area: 'admin', tokenHash, scadeIl: new Date(Date.now() + 60_000) }),
-  );
+  await withTenant(db, istituto.id, (tx) => tx.insert(sessioni).values({ istitutoId: istituto.id, utenteId, area, tokenHash, scadeIl: new Date(Date.now() + 60_000) }));
   return token;
 }
+
+const sessioneAdmin = (istituto: Istituto) => sessioneUtente(istituto, 'admin', istituto.adminId);
+const sessioneAt = (istituto: Istituto) => sessioneUtente(istituto, 'tecnico', istituto.atId);
 
 async function pulisci(istituto: Istituto): Promise<void> {
   await withTenant(db, istituto.id, async (tx) => {
@@ -121,41 +127,77 @@ afterEach(async () => {
 
 interface RottaSessione {
   nome: string;
-  metodo: 'GET' | 'POST' | 'PATCH';
+  metodo: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   url: string;
+  cookie: 'gl_s_adm' | 'gl_s_tec';
+  sessione: (istituto: Istituto) => Promise<string>;
   payload?: Record<string, unknown>;
   // Status atteso quando sessione e X-Tenant-Slug sono dello stesso
   // istituto (controllo positivo). Omesso per le rotte il cui esito di
   // successo dipende da gestilab-auth-service, che in CI non gira come
   // servizio HTTP (docs/04, job "verifica" — nessuna richiesta reale lo
-  // raggiunge): lì basta verificare che NON sia 401, cioè che la sessione
-  // sia stata riconosciuta valida, indipendentemente da cosa succede dopo.
+  // raggiunge), o da uno stato di dominio che questo file non prepara
+  // (es. un affidamento per il perimetro AT): lì basta verificare che NON
+  // sia 401, cioè che la sessione sia stata riconosciuta valida,
+  // indipendentemente da cosa succede dopo.
   statoAttesoStessoIstituto?: number;
 }
 
-const ROTTE_SESSIONE_ADMIN: RottaSessione[] = [
-  { nome: 'GET /admin/utenti', metodo: 'GET', url: '/api/v1/admin/utenti', statoAttesoStessoIstituto: 200 },
+const ID_A_CASO = '11111111-1111-4111-8111-111111111111';
+
+const ROTTE_SESSIONE: RottaSessione[] = [
+  { nome: 'GET /admin/utenti', metodo: 'GET', url: '/api/v1/admin/utenti', cookie: 'gl_s_adm', sessione: sessioneAdmin, statoAttesoStessoIstituto: 200 },
   {
     nome: 'POST /admin/utenti/inviti',
     metodo: 'POST',
     url: '/api/v1/admin/utenti/inviti',
+    cookie: 'gl_s_adm',
+    sessione: sessioneAdmin,
     payload: { email: 'nuovo@cross-tenant-test.test', nome: 'Nuovo', cognome: 'Utente', ruolo: 'at' },
   },
-  { nome: 'GET /admin/impostazioni', metodo: 'GET', url: '/api/v1/admin/impostazioni', statoAttesoStessoIstituto: 200 },
+  { nome: 'GET /admin/impostazioni', metodo: 'GET', url: '/api/v1/admin/impostazioni', cookie: 'gl_s_adm', sessione: sessioneAdmin, statoAttesoStessoIstituto: 200 },
   {
     nome: 'PATCH /admin/impostazioni',
     metodo: 'PATCH',
     url: '/api/v1/admin/impostazioni',
+    cookie: 'gl_s_adm',
+    sessione: sessioneAdmin,
     payload: { modalitaAccessoDocente: 'pin_istituto' },
     statoAttesoStessoIstituto: 200,
   },
-  { nome: 'POST /admin/impostazioni/pin-docente', metodo: 'POST', url: '/api/v1/admin/impostazioni/pin-docente' },
+  { nome: 'POST /admin/impostazioni/pin-docente', metodo: 'POST', url: '/api/v1/admin/impostazioni/pin-docente', cookie: 'gl_s_adm', sessione: sessioneAdmin },
+  { nome: 'GET /tecnico/asset', metodo: 'GET', url: '/api/v1/tecnico/asset', cookie: 'gl_s_tec', sessione: sessioneAt, statoAttesoStessoIstituto: 200 },
+  {
+    nome: 'GET /tecnico/asset/:id',
+    metodo: 'GET',
+    url: `/api/v1/tecnico/asset/${ID_A_CASO}`,
+    cookie: 'gl_s_tec',
+    sessione: sessioneAt,
+    statoAttesoStessoIstituto: 404, // nessun affidamento preparato qui: 404 di dominio, non 401 — comunque "sessione riconosciuta"
+  },
+  {
+    nome: 'POST /tecnico/asset',
+    metodo: 'POST',
+    url: '/api/v1/tecnico/asset',
+    cookie: 'gl_s_tec',
+    sessione: sessioneAt,
+    payload: { ambienteId: ID_A_CASO, tipoAssetId: ID_A_CASO, etichetta: 'PC-CROSS-TENANT', proprieta: 'istituto' },
+  },
+  {
+    nome: 'PATCH /tecnico/asset/:id',
+    metodo: 'PATCH',
+    url: `/api/v1/tecnico/asset/${ID_A_CASO}`,
+    cookie: 'gl_s_tec',
+    sessione: sessioneAt,
+    payload: { stato: 'guasto' },
+  },
+  { nome: 'DELETE /tecnico/asset/:id', metodo: 'DELETE', url: `/api/v1/tecnico/asset/${ID_A_CASO}`, cookie: 'gl_s_tec', sessione: sessioneAt },
 ];
 
-describe.each(ROTTE_SESSIONE_ADMIN)('$nome — sessione di un istituto contro lo slug di un altro', (rotta) => {
+describe.each(ROTTE_SESSIONE)('$nome — sessione di un istituto contro lo slug di un altro', (rotta) => {
   it('risponde 401 SESSIONE_MANCANTE, non i dati o l’effetto dell’altro istituto', async () => {
     const app = await costruisciApp({ ...env, LOG_LEVEL: 'error' });
-    const tokenA = await sessioneAdmin(istitutoA);
+    const tokenA = await rotta.sessione(istitutoA);
 
     const risposta = await iniettaConSlugESessione(app, rotta, istitutoB.slug, tokenA);
 
@@ -166,7 +208,7 @@ describe.each(ROTTE_SESSIONE_ADMIN)('$nome — sessione di un istituto contro lo
   if (rotta.statoAttesoStessoIstituto !== undefined) {
     it('controllo positivo: la stessa sessione sul proprio istituto funziona', async () => {
       const app = await costruisciApp({ ...env, LOG_LEVEL: 'error' });
-      const tokenA = await sessioneAdmin(istitutoA);
+      const tokenA = await rotta.sessione(istitutoA);
 
       const risposta = await iniettaConSlugESessione(app, rotta, istitutoA.slug, tokenA);
 
@@ -175,7 +217,7 @@ describe.each(ROTTE_SESSIONE_ADMIN)('$nome — sessione di un istituto contro lo
   } else {
     it('controllo positivo: la stessa sessione sul proprio istituto viene riconosciuta (non 401)', async () => {
       const app = await costruisciApp({ ...env, LOG_LEVEL: 'error' });
-      const tokenA = await sessioneAdmin(istitutoA);
+      const tokenA = await rotta.sessione(istitutoA);
 
       const risposta = await iniettaConSlugESessione(app, rotta, istitutoA.slug, tokenA);
 
@@ -212,6 +254,6 @@ describe('effetti collaterali su scritture cross-tenant', () => {
     });
 
     const utentiB = await withTenant(db, istitutoB.id, (tx) => tx.select().from(utenti).where(eq(utenti.istitutoId, istitutoB.id)));
-    expect(utentiB).toHaveLength(1); // solo l'admin creato in beforeEach
+    expect(utentiB).toHaveLength(2); // solo admin e AT creati in beforeEach, nessun terzo utente
   });
 });
