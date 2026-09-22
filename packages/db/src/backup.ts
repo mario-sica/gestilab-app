@@ -42,16 +42,30 @@ export function eliminaBackupScaduti(cartella: string, retentionGiorni: number):
   return eliminati;
 }
 
+function quotaIdentificatore(nome: string): string {
+  return `"${nome.replace(/"/g, '""')}"`;
+}
+
 /**
- * Conteggio righe per ogni tabella di "public", nello stesso istante per
- * tutte (una singola transazione REPEATABLE READ: la stessa istantanea
- * MVCC per ogni SELECT, coerente anche se altre connessioni scrivono nel
- * frattempo).
+ * Conteggio righe per ogni tabella di "public" e dump, sulla stessa
+ * istantanea MVCC esportata (`pg_export_snapshot`, `pg_dump --snapshot`):
+ * contare in una transazione propria e lanciare `pg_dump` subito dopo (due
+ * istanti distinti, anche se vicinissimi) permetteva a un'altra
+ * connessione di scrivere nel mezzo, disallineando i conteggi salvati dal
+ * contenuto vero del dump — scoperto dalla suite di sicurezza cross-tenant
+ * (task 1.7, apps/api), che crea ed elimina istituti di prova nella stessa
+ * finestra in CI. `--snapshot` fa leggere a `pg_dump` esattamente la
+ * stessa istantanea di questa transazione, non una nuova presa al volo:
+ * la transazione resta aperta (idle) per tutta la durata del processo
+ * `pg_dump`, che è per questo dentro la stessa `sql.begin`.
  */
-async function conteggiAttuali(migrateUrl: string): Promise<Record<string, number>> {
+async function conteggiEDump(migrateUrl: string, percorsoDump: string): Promise<Record<string, number>> {
   const sql = postgres(migrateUrl, { max: 1 });
   try {
     return await sql.begin('ISOLATION LEVEL REPEATABLE READ', async (tx) => {
+      const [riga] = await tx<{ snapshot: string }[]>`SELECT pg_export_snapshot() AS snapshot`;
+      const snapshot = riga!.snapshot;
+
       const tabelle = await tx<{ tablename: string }[]>`
         SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT LIKE '\\_\\_drizzle%'
       `;
@@ -62,6 +76,9 @@ async function conteggiAttuali(migrateUrl: string): Promise<Record<string, numbe
         );
         conteggi[tablename] = righe[0]?.n ?? 0;
       }
+
+      execFileSync('pg_dump', ['-Fc', '--snapshot', snapshot, '-f', percorsoDump, migrateUrl], { stdio: 'inherit' });
+
       return conteggi;
     });
   } finally {
@@ -69,16 +86,11 @@ async function conteggiAttuali(migrateUrl: string): Promise<Record<string, numbe
   }
 }
 
-function quotaIdentificatore(nome: string): string {
-  return `"${nome.replace(/"/g, '""')}"`;
-}
-
 /**
- * Crea un dump e, nello stesso momento (non quando qualcuno lo verifica
- * più tardi — nel frattempo il database può essere legittimamente
- * cambiato), salva quante righe aveva ogni tabella: è quello il confronto
- * corretto per "il backup corrisponde a cosa c'era quando è stato preso",
- * non "corrisponde a cosa c'è ora nel database originale".
+ * Crea un dump e, sulla stessa istantanea (vedi `conteggiEDump`), salva
+ * quante righe aveva ogni tabella: è quello il confronto corretto per "il
+ * backup corrisponde a cosa c'era quando è stato preso", non "corrisponde
+ * a cosa c'è ora nel database originale".
  */
 export async function creaBackup(cartella: string, migrateUrl: string, retentionGiorni: number): Promise<string> {
   mkdirSync(cartella, { recursive: true });
@@ -86,8 +98,7 @@ export async function creaBackup(cartella: string, migrateUrl: string, retention
   const file = nomeFileBackup();
   const percorso = path.join(cartella, file);
 
-  const conteggi = await conteggiAttuali(migrateUrl);
-  execFileSync('pg_dump', ['-Fc', '-f', percorso, migrateUrl], { stdio: 'inherit' });
+  const conteggi = await conteggiEDump(migrateUrl, percorso);
   writeFileSync(percorsoConteggi(percorso), JSON.stringify(conteggi, null, 2));
 
   const eliminati = eliminaBackupScaduti(cartella, retentionGiorni);
