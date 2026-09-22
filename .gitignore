@@ -44,3 +44,8 @@ pnpm-debug.log*
 apps/web/e2e/.auth/
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Documenti locali di lavoro: credenziali di test, dump di schema — mai
+# versionati (docs/00-ripresa-sessione.md, checklist, li considera lavoro
+# di sessione, non riferimento del repository).
+docs/locale/
