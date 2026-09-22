@@ -85,9 +85,16 @@ Incapsulato in un helper `withTenant(tenantId, fn)`; nessuna query di dominio fu
 
 **Test obbligatorio in CI**: per ogni endpoint, richiesta autenticata come tenant A su risorsa del tenant B → 404.
 
-### Provisioning tenant
-Comando `pnpm tenant:create --slug dellaquila --nome "IISS M. Dell'Aquila - S. Staffa" --meccanografico FGIS...`:
-crea istituto, anno scolastico corrente, admin iniziale con invito, e precarica tipi asset, guide rapide, template risposta, checklist di sistema.
+### Provisioning tenant (task 1.6)
+Comando per il fornitore, non per l'admin dell'istituto (che a questo punto non esiste ancora):
+```
+pnpm tenant:create --slug dellaquila --nome "IISS M. Dell'Aquila - S. Staffa" \
+  --meccanografico FGIS00100X --tipologia IISS \
+  --admin-email admin@dellaquila.it --admin-nome Mario --admin-cognome Rossi
+```
+Crea istituto, anno scolastico corrente (convenzione settembre–agosto, dedotta dalla data di sistema) e admin iniziale con invito — chiama `POST /inviti` di gestilab-auth-service come farebbe `apps/api`, e stampa il link in console (nessuna coda email: per un comando eseguito una volta dal fornitore non serve `apps/worker`). Uno slug già esistente è un errore bloccante, a differenza di `pnpm db:seed` che è idempotente sui dati demo.
+
+Non precarica tipi asset, guide rapide, template risposta o checklist di sistema: quegli schemi non esistono ancora (arrivano con le fasi 2 e 4) — precaricarli ora userebbe dati inventati per un contratto destinato a cambiare. Il tenant nasce navigabile e pronto per l'onboarding via invito; il resto del censimento è responsabilità dell'admin una volta dentro.
 
 ## Routing applicativo
 
