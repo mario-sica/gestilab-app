@@ -89,6 +89,8 @@ Italiano per il dominio, inglese per i termini tecnici del framework (`useState`
 
 Regola: ogni bug corretto porta con sé un test che fallisce senza la correzione.
 
+La parte cross-tenant della suite di sicurezza (task 1.7) vive in `apps/api/src/sicurezza-cross-tenant.test.ts`, parametrica su una tabella di rotte con sessione: ogni nuovo endpoint sotto `pluginSessione` va aggiunto lì, non lasciato scoperto. Un endpoint pubblico ma tenant-scoped (come `/docente/persone`) ha il proprio test di isolamento nel file del suo modulo, stessa idea senza sessione da forgiare.
+
 ## CI (GitHub Actions)
 Trigger: push su `dev` e pull request verso `dev` — non `main`. `main` (regola permanente, vedi "Flusso di lavoro git" più sotto) contiene solo lo scheletro del task 0.1 e non riceve altri commit: è `dev` il branch di integrazione reale, quello che la CI deve tenere verde.
 
