@@ -1,4 +1,4 @@
-import { richiediSessioneDocente } from '../../lib/sessione.js';
+import { richiediSessioneDocente } from '../../../lib/sessione.js';
 
 // docs/02-architettura.md: /docente → "le mie segnalazioni" (Fase 4).
 // Segnaposto autenticato per ora: chiude il flusso login → area → esci

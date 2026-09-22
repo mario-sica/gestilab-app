@@ -1,5 +1,5 @@
-import { richiediSessioneDocente } from '../../lib/sessione.js';
-import { ModuloEsci } from '../[area]/esci/modulo-esci.js';
+import { richiediSessioneDocente } from '../../../lib/sessione.js';
+import { ModuloEsci } from '../../[area]/esci/modulo-esci.js';
 
 // Area docente (task 1.5, segnaposto): niente "altra area" 403 come per
 // admin/tecnico (lib/sessione.ts spiega perché) — un admin o un AT che
