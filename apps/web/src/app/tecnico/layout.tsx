@@ -15,7 +15,7 @@ export default async function LayoutTecnico({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <IntestazioneArea area="tecnico" titolo="Tecnico" utente={accesso.utente} voci={[]} />
+      <IntestazioneArea area="tecnico" titolo="Tecnico" utente={accesso.utente} voci={[{ href: '/tecnico/asset', testo: 'Asset' }]} />
       <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
     </div>
   );

@@ -32,7 +32,9 @@ Realizzato da `apps/api/src/plugin/errori.ts` (`setErrorHandler` centrale): ogni
 | `RUOLO_NON_VALIDO` | 403 | Sessione valida ma ruolo non ammesso dalla rotta. `dettagli.areaCorretta` (`admin` \| `tecnico`) è l'area a cui il ruolo appartiene (`AREA_PER_RUOLO`, `packages/shared`): `apps/web` la usa per mostrare il link all'area giusta, non un redirect al login (`docs/02-architettura.md` § Aree) |
 | `TENANT_NON_TROVATO` | 404 | Slug riservato, malformato, o nessun istituto attivo con quello slug |
 | `RISORSA_NON_TROVATA` | 404 | Rotta inesistente |
+| `ASSET_NON_TROVATO` | 404 | Asset inesistente **o** fuori dal perimetro affidamenti dell'AT (task 2.2) — stesso codice per entrambi i casi: fuori perimetro non deve rivelare che l'asset esiste (docs/06-sicurezza-gdpr.md § 2.3) |
 | `EMAIL_GIA_PRESENTE` | 409 | Invito utente con un'email già usata nello stesso istituto (indice `utenti_istituto_id_email_idx`) |
+| `ETICHETTA_GIA_PRESENTE` | 409 | Crea/modifica asset con un'`etichetta` già usata nello stesso istituto (indice `asset_istituto_id_etichetta_idx`) |
 | `TROPPE_RICHIESTE` | 429 | Limite di frequenza superato |
 | `CONTESTO_MANCANTE` | 500 | Errore di programmazione: `pluginSessione` registrato senza `pluginTenant` prima |
 | `AUTH_SERVICE_ERRORE` | 502 | gestilab-auth-service ha risposto con un errore a una chiamata interna |
@@ -77,6 +79,32 @@ Contesto Fastify dedicato, come `/admin/*` ma **senza `pluginSessione`**: solo `
 
 Pubblico (nessuna sessione), tenant-scoped. `query` minimo 2 caratteri (`400 RICHIESTA_NON_VALIDA` sotto soglia — su un endpoint pubblico una ricerca troppo corta esporrebbe l'intero elenco). Risponde `schemaPersonaRicerca[]` (`packages/shared`): `id`, `nome`, `cognome`, `qualifica` — solo persone attive, non eliminate, dell'anno scolastico corrente, il cui `nome || ' ' || cognome` contiene `query` (`ILIKE`, indice trigram di `persone`). Risponde sempre una **lista vuota**, mai un errore, se `istituti.modalita_accesso_docente` non è `pin_istituto` o `pin_personale`, o l'istituto non è attivo: un elenco pubblico di nomi non serve a nulla dove il login docente non è attivo, ed è superficie esposta senza motivo.
 
+## Area tecnico: `/api/v1/tecnico/*` (task 2.2)
+
+Contesto Fastify dedicato, come `/admin/*`: `pluginTenant` + `pluginSessione` con area `tecnico` (cookie `gl_s_tec`). Ruoli: solo `at` (`AREA_PER_RUOLO` mappa `at` → `tecnico`, unico ruolo di quest'area — nessun `richiediRuolo` con più valori qui).
+
+**Perimetro affidamenti** (docs/06-sicurezza-gdpr.md § 2.3, "Regole di dominio da testare" #5): ogni rotta filtra sempre sugli `ambiente_id` con un `affidamenti_ambienti` aperto (`data_fine IS NULL`) per quell'utente nell'anno scolastico corrente, ricalcolato a ogni richiesta — mai una lista salvata in sessione. Un asset fuori da questo perimetro risponde **404 `ASSET_NON_TROVATO`**, identico a un id inesistente: non rivela che l'asset esiste in un altro laboratorio.
+
+### `GET /api/v1/tecnico/asset` — elenco (paginato)
+
+Query: `pagina` (default 1), `perPagina` (default 50, max 100), `ambienteId?`, `stato?`, `query?` (cerca in `etichetta`, `ILIKE`). Risponde `schemaListaAsset`: `{ dati: Asset[], totale, pagina, perPagina }` — vedi § Paginazione.
+
+### `GET /api/v1/tecnico/asset/:id` — dettaglio
+
+`404 ASSET_NON_TROVATO` se l'id non esiste, è fuori perimetro, o l'asset è soft-eliminato (`eliminato_il` non nullo).
+
+### `POST /api/v1/tecnico/asset` — crea
+
+Corpo: `schemaNuovoAsset`. `ambienteId` deve essere nel perimetro dell'AT (altrimenti `404 ASSET_NON_TROVATO`, non 403: non si conferma nemmeno che l'ambiente esiste fuori dal proprio perimetro). `codice_breve`/`qr_token` generati dal server (`packages/db/src/codici-asset.ts` — generazione minima, l'algoritmo definitivo con tutte le garanzie del contratto è task 2.3). `stato` parte sempre `attivo`. Se `parentAssetId` è indicato, deve riferirsi a un asset dello stesso istituto e senza a sua volta un parent (profondità massima 1, docs/01-dominio.md). Risponde `201 Asset`.
+
+### `PATCH /api/v1/tecnico/asset/:id` — modifica
+
+Corpo: `schemaModificaAsset` (tutti i campi opzionali tranne almeno uno). **Non accetta `ambienteId`**: cambiare ambiente passa solo da un movimento (task 2.7), non da questa rotta — un `ambienteId` nel corpo è un campo sconosciuto per lo schema, `400 RICHIESTA_NON_VALIDA`. `404 ASSET_NON_TROVATO` se fuori perimetro.
+
+### `DELETE /api/v1/tecnico/asset/:id` — elimina
+
+Soft delete: valorizza `eliminato_il`, non cancella la riga (docs/01-dominio.md: asset è una delle due sole tabelle con soft delete). `404 ASSET_NON_TROVATO` se fuori perimetro o già eliminato. Risponde `204`.
+
 ## Rate limit
 
 `@fastify/rate-limit` con store Redis (non in-memory: l'API deve reggere più repliche in futuro senza cambiare codice). Soglia globale di default: 100 richieste/minuto per IP. Header di risposta standard (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`) su ogni richiesta. Oltre soglia: `429 TROPPE_RICHIESTE`.
@@ -89,4 +117,9 @@ Fastify/Pino, JSON su stdout. `redact` (`apps/api/src/plugin/logger.ts`) rimuove
 
 ## Paginazione
 
-Non ancora definita: nessun endpoint di lista esiste ancora (primo arriverà in Fase 1). Questa sezione si aggiorna con la prima rotta che ne ha bisogno, non prima.
+Definita da `GET /api/v1/tecnico/asset` (task 2.2), prima lista che ne ha avuto bisogno (gli elenchi di Fase 1 — utenti, persone — sono decine di righe, non serviva). Stile pagina/numero, non cursore: i dataset di un istituto sono centinaia o poche migliaia di righe, non milioni, e un cursore aggiungerebbe complessità senza un bisogno reale.
+
+- Query: `pagina` (1-based, default 1), `perPagina` (default 50, max 100).
+- Risposta: `{ dati: T[], totale, pagina, perPagina }` — `totale` è il conteggio di tutte le righe che soddisfano i filtri, non solo quelle nella pagina corrente (necessario per calcolare il numero di pagine lato client).
+- Ordinamento sempre esplicito e stabile (mai "l'ordine naturale della tabella"): `GET /asset` ordina per `etichetta`, unique per istituto.
+- Ogni nuovo endpoint di lista segue questa stessa forma, salvo un motivo specifico per deviare (documentato lì).

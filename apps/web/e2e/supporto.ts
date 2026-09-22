@@ -1,6 +1,7 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 
 export const ADMIN = { email: 'admin@dellaquila.localhost', password: 'GestiLabDemo2026!' };
+export const AT = { email: 'at@dellaquila.localhost', password: 'GestiLabDemo2026!' };
 export const MAILPIT = process.env.E2E_MAILPIT_URL ?? 'http://localhost:8025';
 
 export async function accediComeAdmin(page: Page): Promise<void> {
@@ -9,6 +10,14 @@ export async function accediComeAdmin(page: Page): Promise<void> {
   await page.getByLabel('Password').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Accedi' }).click();
   await page.waitForURL('**/admin');
+}
+
+export async function accediComeAt(page: Page): Promise<void> {
+  await page.goto('/tecnico/login');
+  await page.getByLabel('Email').fill(AT.email);
+  await page.getByLabel('Password').fill(AT.password);
+  await page.getByRole('button', { name: 'Accedi' }).click();
+  await page.waitForURL('**/tecnico');
 }
 
 interface MessaggioMailpit {

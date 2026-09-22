@@ -8,6 +8,7 @@ import { rotteAdminImpostazioni } from './moduli/admin-impostazioni/rotte.js';
 import { rotteAdminUtenti } from './moduli/admin-utenti/rotte.js';
 import { rotteDocente } from './moduli/docente/rotte.js';
 import { rotteSalute } from './moduli/salute/rotte.js';
+import { rotteTecnicoAsset } from './moduli/tecnico-asset/rotte.js';
 import { pluginCodaEmail } from './plugin/coda-email.js';
 import { pluginErrori } from './plugin/errori.js';
 import { opzioniLogger } from './plugin/logger.js';
@@ -70,6 +71,18 @@ export async function costruisciApp(env: EnvApp) {
       await docente.register(rotteDocente, { db });
     },
     { prefix: `/api/${VERSIONE_API}/docente` },
+  );
+
+  // Area tecnico: tenant dall'header rivalidato + sessione dal cookie
+  // gl_s_tec (task 2.2). Un solo ruolo vi appartiene ('at',
+  // AREA_PER_RUOLO): il supervisore, pur nell'area admin, non entra qui.
+  await app.register(
+    async (tecnico) => {
+      await tecnico.register(pluginTenant, { db });
+      await tecnico.register(pluginSessione, { db, area: 'tecnico' });
+      await tecnico.register(rotteTecnicoAsset, { db });
+    },
+    { prefix: `/api/${VERSIONE_API}/tecnico` },
   );
 
   return app;

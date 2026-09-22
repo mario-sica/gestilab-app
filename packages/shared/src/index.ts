@@ -38,3 +38,6 @@ export type { AccessoDocente } from './docente.js';
 
 export { CATEGORIE_ASSET, CATEGORIE_INVENTARIALI_ASSET, PROPRIETA_ASSET, STATI_ASSET, TIPI_CONTRATTO, TIPI_MOVIMENTO_ASSET } from './asset.js';
 export type { CategoriaAsset, CategoriaInventarialeAsset, ProprietaAsset, StatoAsset, TipoContratto, TipoMovimentoAsset } from './asset.js';
+
+export { schemaAsset, schemaListaAsset, schemaListaAssetQuery, schemaModificaAsset, schemaNuovoAsset } from './asset-api.js';
+export type { Asset, ListaAsset, ListaAssetQuery, ModificaAsset, NuovoAsset } from './asset-api.js';
