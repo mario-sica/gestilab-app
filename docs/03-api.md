@@ -28,7 +28,7 @@ Realizzato da `apps/api/src/plugin/errori.ts` (`setErrorHandler` centrale): ogni
 |---|---|---|
 | `RICHIESTA_NON_VALIDA` | 400 | Corpo/query/parametri che non passano lo schema Zod della rotta |
 | `TENANT_MANCANTE` | 400 | Header `X-Tenant-Slug` assente su una rotta che lo richiede |
-| `SESSIONE_MANCANTE` | 401 | Cookie di sessione dell'area assente, sconosciuto, scaduto, di un'altra area o di un utente disattivato — sempre lo stesso codice, non si distingue il caso |
+| `SESSIONE_MANCANTE` | 401 | Cookie di sessione dell'area assente, sconosciuto, scaduto, di un'altra area, di un altro istituto (task 1.7: la riga di sessione non è visibile sotto l'RLS dell'istituto risolto dall'header) o di un utente disattivato — sempre lo stesso codice, non si distingue il caso |
 | `RUOLO_NON_VALIDO` | 403 | Sessione valida ma ruolo non ammesso dalla rotta. `dettagli.areaCorretta` (`admin` \| `tecnico`) è l'area a cui il ruolo appartiene (`AREA_PER_RUOLO`, `packages/shared`): `apps/web` la usa per mostrare il link all'area giusta, non un redirect al login (`docs/02-architettura.md` § Aree) |
 | `TENANT_NON_TROVATO` | 404 | Slug riservato, malformato, o nessun istituto attivo con quello slug |
 | `RISORSA_NON_TROVATA` | 404 | Rotta inesistente |
