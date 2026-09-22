@@ -1,4 +1,5 @@
-import { and, eq } from 'drizzle-orm';
+import { randomBytes } from 'node:crypto';
+import { and, eq, isNull } from 'drizzle-orm';
 import { leggiEnv } from '@gestilab/shared';
 
 import { creaClient } from './client.js';
@@ -7,9 +8,11 @@ import {
   ambienti,
   anniScolastici,
   affidamentiAmbienti,
+  asset,
   istituti,
   persone,
   plessi,
+  tipiAsset,
   utenti,
 } from './schema/index.js';
 
@@ -36,6 +39,51 @@ interface DatiTenant {
   tipologia: 'IISS' | 'liceo';
 }
 
+// Catalogo globale di sistema (docs/01-dominio.md — Gruppo B: tipi_asset
+// con istituto_id NULL, uguale per ogni istituto). schema_attributi vuoto
+// per ora: gli schemi JSON per categoria arrivano con un task che li usa
+// davvero, non prima. Un rappresentante per categoria, non un catalogo
+// esaustivo — basta a rendere il seed di asset demo realistico.
+const CATALOGO_TIPI_ASSET = [
+  { nome: 'PC desktop', categoria: 'informatica' },
+  { nome: 'PC portatile', categoria: 'informatica' },
+  { nome: 'Monitor', categoria: 'informatica' },
+  { nome: 'Proiettore', categoria: 'audiovideo' },
+  { nome: 'LIM', categoria: 'audiovideo' },
+  { nome: 'Stampante', categoria: 'stampa' },
+  { nome: 'Switch di rete', categoria: 'rete' },
+  { nome: 'Access point', categoria: 'rete' },
+  { nome: 'Microscopio', categoria: 'scientifico' },
+  { nome: 'Trapano', categoria: 'officina' },
+  { nome: 'Armadio', categoria: 'arredo' },
+  { nome: 'Sedia', categoria: 'arredo' },
+  { nome: 'Materiale vario', categoria: 'altro' },
+] as const;
+
+// Mix di asset per un laboratorio informatica demo: ciclato per generare i
+// 30 asset di ogni istituto (task 2.1, "Fatto quando: ... 30 asset demo").
+const MIX_ASSET_LABORATORIO = [
+  { tipo: 'PC desktop', marca: 'Dell', modello: 'OptiPlex 3000' },
+  { tipo: 'Monitor', marca: 'Dell', modello: 'P2422H' },
+  { tipo: 'PC desktop', marca: 'Dell', modello: 'OptiPlex 3000' },
+  { tipo: 'Monitor', marca: 'Dell', modello: 'P2422H' },
+  { tipo: 'Proiettore', marca: 'Epson', modello: 'EB-X49' },
+  { tipo: 'Switch di rete', marca: 'TP-Link', modello: 'TL-SG1016' },
+  { tipo: 'Stampante', marca: 'HP', modello: 'LaserJet Pro M404' },
+] as const;
+
+// Caratteri senza ambiguità (no O/0, I/1), come da docs/01-dominio.md:
+// generazione minima per il seed, non l'algoritmo definitivo (task 2.3).
+const ALFABETO_CODICE_BREVE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function generaCodiceBreve(): string {
+  return Array.from({ length: 6 }, () => ALFABETO_CODICE_BREVE[randomBytes(1)[0]! % ALFABETO_CODICE_BREVE.length]).join('');
+}
+
+function generaQrToken(): string {
+  return randomBytes(16).toString('base64url');
+}
+
 const TENANT_DEMO: DatiTenant[] = [
   {
     slug: 'dellaquila',
@@ -56,13 +104,34 @@ async function main(): Promise<void> {
   const db = creaClient(env.DATABASE_URL);
 
   try {
-    await seminaTutti(db, env.BASE_DOMAIN);
+    const tipiPerNome = await seminaCatalogoTipiAsset(db);
+    await seminaTutti(db, env.BASE_DOMAIN, tipiPerNome);
   } finally {
     await db.$client.end();
   }
 }
 
-async function seminaTutti(db: ReturnType<typeof creaClient>, baseDomain: string): Promise<void> {
+// Catalogo globale (istituto_id NULL): fuori da withTenant, come istituti,
+// perché non appartiene a un tenant — la policy RLS di tipi_asset ammette
+// esplicitamente le righe globali indipendentemente dal contesto (vedi
+// schema/tipi-asset.ts). Idempotente: se il catalogo esiste già (qualunque
+// riga globale), non lo tocca.
+async function seminaCatalogoTipiAsset(db: ReturnType<typeof creaClient>): Promise<Map<string, string>> {
+  const esistenti = await db.select({ id: tipiAsset.id, nome: tipiAsset.nome }).from(tipiAsset).where(isNull(tipiAsset.istitutoId));
+  if (esistenti.length > 0) {
+    console.log('Catalogo globale tipi_asset già seminato, salto.');
+    return new Map(esistenti.map((riga) => [riga.nome, riga.id]));
+  }
+
+  const creati = await db
+    .insert(tipiAsset)
+    .values(CATALOGO_TIPI_ASSET.map((tipo) => ({ nome: tipo.nome, categoria: tipo.categoria, schemaAttributi: {} })))
+    .returning({ id: tipiAsset.id, nome: tipiAsset.nome });
+  console.log(`Catalogo globale tipi_asset seminato (${creati.length} tipi).`);
+  return new Map(creati.map((riga) => [riga.nome, riga.id]));
+}
+
+async function seminaTutti(db: ReturnType<typeof creaClient>, baseDomain: string, tipiPerNome: Map<string, string>): Promise<void> {
   for (const dati of TENANT_DEMO) {
     const [istituto] = await db
       .insert(istituti)
@@ -193,6 +262,42 @@ async function seminaTutti(db: ReturnType<typeof creaClient>, baseDomain: string
           annoScolasticoId: anno.id,
         },
       ]);
+
+      // 30 asset demo (task 2.1, "Fatto quando"), 15 per laboratorio,
+      // ciclando MIX_ASSET_LABORATORIO. codice_breve/qr_token con la
+      // generazione minima del seed (vedi sopra), non l'algoritmo
+      // definitivo di task 2.3.
+      const ASSET_PER_AMBIENTE = 15;
+      const codiciBreviUsati = new Set<string>();
+      const assetDaCreare = ambientiCreati.flatMap((ambiente) =>
+        Array.from({ length: ASSET_PER_AMBIENTE }, (_, indice) => {
+          const mix = MIX_ASSET_LABORATORIO[indice % MIX_ASSET_LABORATORIO.length]!;
+          const tipoAssetId = tipiPerNome.get(mix.tipo);
+          if (!tipoAssetId) {
+            throw new Error(`Tipo asset "${mix.tipo}" non trovato nel catalogo globale.`);
+          }
+          let codiceBreve = generaCodiceBreve();
+          while (codiciBreviUsati.has(codiceBreve)) {
+            codiceBreve = generaCodiceBreve();
+          }
+          codiciBreviUsati.add(codiceBreve);
+          return {
+            istitutoId: istituto.id,
+            ambienteId: ambiente.id,
+            tipoAssetId,
+            etichetta: `${ambiente.codiceBreve}-${String(indice + 1).padStart(2, '0')}`,
+            marca: mix.marca,
+            modello: mix.modello,
+            proprieta: 'istituto' as const,
+            stato: 'attivo' as const,
+            codiceBreve,
+            qrToken: generaQrToken(),
+          };
+        }),
+      );
+      if (assetDaCreare.length > 0) {
+        await tx.insert(asset).values(assetDaCreare);
+      }
     });
 
     console.log(`Istituto "${dati.slug}" seminato.`);

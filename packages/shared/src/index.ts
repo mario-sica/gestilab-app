@@ -35,3 +35,6 @@ export type { PersonaRicerca, QualificaPersona } from './persone.js';
 
 export { schemaAccessoDocente } from './docente.js';
 export type { AccessoDocente } from './docente.js';
+
+export { CATEGORIE_ASSET, CATEGORIE_INVENTARIALI_ASSET, PROPRIETA_ASSET, STATI_ASSET, TIPI_CONTRATTO, TIPI_MOVIMENTO_ASSET } from './asset.js';
+export type { CategoriaAsset, CategoriaInventarialeAsset, ProprietaAsset, StatoAsset, TipoContratto, TipoMovimentoAsset } from './asset.js';
