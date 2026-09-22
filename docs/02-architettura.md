@@ -100,7 +100,7 @@ Non precarica tipi asset, guide rapide, template risposta o checklist di sistema
 
 ```
 /                     -> se sessione valida, redirect all'area; altrimenti scelta area
-/q/{token}            -> pagina pubblica QR (nessun login)
+/q/{token}            -> pagina pubblica QR (nessun login); senza token, form per il codice breve
 /s/{token_tracking}   -> stato segnalazione per il segnalante
 
 /docente/login        -> nome da elenco + PIN (o SSO)

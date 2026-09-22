@@ -41,3 +41,6 @@ export type { CategoriaAsset, CategoriaInventarialeAsset, ProprietaAsset, StatoA
 
 export { schemaAsset, schemaListaAsset, schemaListaAssetQuery, schemaModificaAsset, schemaNuovoAsset } from './asset-api.js';
 export type { Asset, ListaAsset, ListaAssetQuery, ModificaAsset, NuovoAsset } from './asset-api.js';
+
+export { schemaAssetPubblico } from './asset-pubblico.js';
+export type { AssetPubblico } from './asset-pubblico.js';
