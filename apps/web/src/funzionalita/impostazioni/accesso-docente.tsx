@@ -2,16 +2,24 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ErroreDominio, type Impostazioni, type PinRigenerato } from '@gestilab/shared';
+import {
+  ErroreDominio,
+  MODALITA_ACCESSO_DOCENTE_SELEZIONABILI,
+  type AggiornaImpostazioni,
+  type Impostazioni,
+  type ModalitaAccessoDocente,
+  type PinRigenerato,
+} from '@gestilab/shared';
 
 import { Avviso } from '../../componenti/avviso.js';
 import { Bottone } from '../../componenti/bottone.js';
+import { CampoSelezione } from '../../componenti/campo.js';
 import { chiamaApiClient } from '../../lib/client-api.js';
 
 const CHIAVE_IMPOSTAZIONI = ['admin', 'impostazioni'] as const;
 
-const NOME_MODALITA: Record<Impostazioni['modalitaAccessoDocente'], string> = {
-  solo_qr: 'solo QR (nessun login docente)',
+const NOME_MODALITA: Record<ModalitaAccessoDocente, string> = {
+  solo_qr: 'Solo QR (nessun login docente)',
   pin_istituto: 'PIN unico d’istituto',
   pin_personale: 'PIN personale per docente',
   sso: 'SSO',
@@ -21,7 +29,7 @@ const NOME_MODALITA: Record<Impostazioni['modalitaAccessoDocente'], string> = {
 // esiste da nessuna parte in chiaro (solo l'hash): chi cambia pagina e
 // non l'ha annotato deve rigenerarlo, cosa che butta fuori tutti i
 // docenti. La conferma esplicita serve a questo.
-export function PinDocente({ impostazioniIniziali, puoRigenerare }: { impostazioniIniziali: Impostazioni; puoRigenerare: boolean }): React.JSX.Element {
+export function AccessoDocente({ impostazioniIniziali, puoRigenerare }: { impostazioniIniziali: Impostazioni; puoRigenerare: boolean }): React.JSX.Element {
   const queryClient = useQueryClient();
   const [confermaAperta, setConfermaAperta] = useState(false);
   const [ultimo, setUltimo] = useState<PinRigenerato | null>(null);
@@ -30,6 +38,14 @@ export function PinDocente({ impostazioniIniziali, puoRigenerare }: { impostazio
     queryKey: CHIAVE_IMPOSTAZIONI,
     queryFn: () => chiamaApiClient<Impostazioni>('/api/v1/admin/impostazioni'),
     initialData: impostazioniIniziali,
+  });
+
+  const modificaModalita = useMutation({
+    mutationFn: (dati: AggiornaImpostazioni) =>
+      chiamaApiClient<Impostazioni>('/api/v1/admin/impostazioni', { method: 'PATCH', body: JSON.stringify(dati) }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: CHIAVE_IMPOSTAZIONI });
+    },
   });
 
   const rigenera = useMutation({
@@ -49,13 +65,32 @@ export function PinDocente({ impostazioniIniziali, puoRigenerare }: { impostazio
 
   return (
     <div className="flex max-w-lg flex-col gap-4 rounded border border-gray-300 bg-white p-4">
-      <h2 className="text-lg font-semibold">PIN docente</h2>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-        <dt className="text-gray-600">Modalità di accesso docente</dt>
-        <dd>{NOME_MODALITA[impostazioni.modalitaAccessoDocente]}</dd>
-        <dt className="text-gray-600">PIN d’istituto</dt>
-        <dd>{impostazioni.pinImpostato ? 'impostato' : 'mai generato'}</dd>
-      </dl>
+      <h2 className="text-lg font-semibold">Accesso docente</h2>
+
+      {puoRigenerare ? (
+        <CampoSelezione
+          etichetta="Modalità di accesso docente"
+          value={impostazioni.modalitaAccessoDocente}
+          disabled={modificaModalita.isPending}
+          onChange={(evento) =>
+            modificaModalita.mutate({
+              // Il valore arriva sempre da una delle <option> generate da
+              // MODALITA_ACCESSO_DOCENTE_SELEZIONABILI (mai "sso": non è
+              // tra le opzioni del menu) — il cast è sicuro quanto quello
+              // che il browser stesso applica scegliendo tra le <option>.
+              modalitaAccessoDocente: evento.target.value as (typeof MODALITA_ACCESSO_DOCENTE_SELEZIONABILI)[number],
+            })
+          }
+          opzioni={MODALITA_ACCESSO_DOCENTE_SELEZIONABILI.map((valore) => ({ valore, testo: NOME_MODALITA[valore] }))}
+        />
+      ) : (
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt className="text-gray-600">Modalità di accesso docente</dt>
+          <dd>{NOME_MODALITA[impostazioni.modalitaAccessoDocente]}</dd>
+        </dl>
+      )}
+      <p className="text-sm">PIN d’istituto: {impostazioni.pinImpostato ? 'impostato' : 'mai generato'}</p>
+      {modificaModalita.isError && <Avviso tono="errore">Non è stato possibile cambiare la modalità. Riprova più tardi.</Avviso>}
 
       {ultimo && (
         <Avviso tono="successo">

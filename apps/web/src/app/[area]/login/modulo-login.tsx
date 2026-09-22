@@ -5,9 +5,14 @@ import type { AreaSessione } from '@gestilab/shared';
 
 import { accedi, type StatoLogin } from './azioni.js';
 
+// 'docente' qui non è mai raggiunto in pratica: app/docente/login/page.tsx
+// (route statica, task 1.5 — nome da elenco + PIN, non email+password)
+// intercetta /docente/login prima di questo segmento dinamico. La voce
+// resta solo per far tornare il tipo Record<AreaSessione,…>.
 const TITOLO_PER_AREA: Record<AreaSessione, string> = {
   admin: 'Accesso amministratore',
   tecnico: 'Accesso tecnico',
+  docente: 'Accesso docente',
 };
 
 const STATO_INIZIALE: StatoLogin = {};

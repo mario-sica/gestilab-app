@@ -21,3 +21,17 @@ export const schemaPinRigenerato = z.object({
   sessioniDocenteRevocate: z.number().int().nonnegative(),
 });
 export type PinRigenerato = z.infer<typeof schemaPinRigenerato>;
+
+// PATCH /api/v1/admin/impostazioni (task 1.5): solo la modalità, per ora —
+// pagina pubblica, captcha, branding (docs/02-architettura.md §
+// /admin/impostazioni) arrivano con le loro fasi. "sso" non è nell'enum
+// selezionabile dal form: non ancora implementato (RF-A5, V1) — sceglierlo
+// bloccherebbe ogni accesso docente senza che l'Admin possa saperlo da
+// qui. Resta valido lato schema Postgres (schemaImpostazioni sopra lo
+// accetta in lettura) per un istituto già configurato così a mano.
+export const MODALITA_ACCESSO_DOCENTE_SELEZIONABILI = ['solo_qr', 'pin_istituto', 'pin_personale'] as const;
+
+export const schemaAggiornaImpostazioni = z.object({
+  modalitaAccessoDocente: z.enum(MODALITA_ACCESSO_DOCENTE_SELEZIONABILI, "Scegli un'opzione valida."),
+});
+export type AggiornaImpostazioni = z.infer<typeof schemaAggiornaImpostazioni>;
