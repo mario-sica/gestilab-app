@@ -1,14 +1,21 @@
 import Link from 'next/link';
-import type { AreaSessione } from '@gestilab/shared';
+import type { AreaSessioneUtente } from '@gestilab/shared';
 
-const NOME_AREA: Record<AreaSessione, string> = { admin: 'amministratore', tecnico: 'tecnico' };
+const NOME_AREA: Record<AreaSessioneUtente, string> = { admin: 'amministratore', tecnico: 'tecnico' };
 
 // docs/02-architettura.md § Aree: ruolo sbagliato → 403 con link all'area
 // corretta, non redirect al login. Il layout dell'area lo renderizza al
 // posto dei figli (status HTTP resta 200: Next non permette di cambiarlo
 // da un layout senza `forbidden()`, ancora sperimentale — il contenuto
-// dice chiaramente cosa è successo).
-export function AccessoNegato({ areaRichiesta, areaCorretta }: { areaRichiesta: AreaSessione; areaCorretta: AreaSessione }): React.JSX.Element {
+// dice chiaramente cosa è successo). Solo admin/tecnico: vedi il commento
+// su leggiSessione in lib/sessione.ts sul perché il docente non c'entra.
+export function AccessoNegato({
+  areaRichiesta,
+  areaCorretta,
+}: {
+  areaRichiesta: AreaSessioneUtente;
+  areaCorretta: AreaSessioneUtente;
+}): React.JSX.Element {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
       <h1 className="text-2xl font-semibold">Non hai accesso all&apos;area {NOME_AREA[areaRichiesta]}</h1>

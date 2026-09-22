@@ -8,9 +8,13 @@ export const metadata: Metadata = {
   title: 'Esci — GestiLab',
 };
 
+// Qui 'docente' È raggiunto davvero: a differenza del login, non esiste
+// (né serve) una /docente/esci letterale — il modulo generico basta, il
+// logout non ha bisogno di un form diverso per persona (task 1.5).
 const TITOLO_PER_AREA = {
   admin: 'Uscire dall’area amministratore?',
   tecnico: 'Uscire dall’area tecnico?',
+  docente: 'Uscire dall’area docente?',
 } as const;
 
 export default async function PaginaEsci({

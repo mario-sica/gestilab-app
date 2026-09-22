@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { withTenant, type Db } from '@gestilab/db';
-import { AREA_PER_RUOLO, COOKIE_PER_AREA, ErroreDominio, type AreaSessione, type RuoloUtente } from '@gestilab/shared';
+import { AREA_PER_RUOLO, COOKIE_PER_AREA, ErroreDominio, type AreaSessioneUtente, type RuoloUtente } from '@gestilab/shared';
 import { leggiSessioneAttiva, type UtenteSessione } from 'gestilab-auth-service/lettura';
 
 declare module 'fastify' {
@@ -19,7 +19,7 @@ declare module 'fastify' {
  * condivisa con apps/web: qui solo cookie e contesto tenant. Richiede
  * pluginTenant registrato prima (usa request.tenantId).
  */
-export const pluginSessione = fp(async function pluginSessione(app: FastifyInstance, opts: { db: Db; area: AreaSessione }) {
+export const pluginSessione = fp(async function pluginSessione(app: FastifyInstance, opts: { db: Db; area: AreaSessioneUtente }) {
   app.decorateRequest('utente', undefined);
 
   app.addHook('onRequest', async (request: FastifyRequest) => {

@@ -1,9 +1,12 @@
 import { expect, test } from '@playwright/test';
 
 // Task 1.4: il PIN si genera con conferma esplicita e si vede una volta.
+// Task 1.5 ha aggiunto il selettore di modalità sopra: intestazione e
+// riga di stato del PIN sono cambiate di conseguenza (vedi docente-login.spec.ts
+// per il selettore stesso).
 test('rigenerazione del PIN docente con conferma, PIN a 6 cifre mostrato una volta', async ({ page }) => {
   await page.goto('/admin/impostazioni');
-  await expect(page.getByRole('heading', { name: 'PIN docente' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Accesso docente' })).toBeVisible();
 
   await page.getByRole('button', { name: /Genera il PIN|Rigenera il PIN/ }).click();
   await expect(page.getByRole('group')).toContainText('tutti i docenti collegati dovranno rientrare');
@@ -12,7 +15,7 @@ test('rigenerazione del PIN docente con conferma, PIN a 6 cifre mostrato una vol
   const avviso = page.locator('main [role=status]');
   await expect(avviso).toContainText('Nuovo PIN:');
   await expect(avviso.locator('strong')).toHaveText(/^\d{6}$/);
-  await expect(page.getByText('PIN d’istituto').locator('..').getByText('impostato')).toBeVisible();
+  await expect(page.getByText('PIN d’istituto: impostato')).toBeVisible();
 
   // Ricaricando, il PIN non è più visibile: esiste solo l'hash.
   await page.reload();

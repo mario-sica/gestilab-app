@@ -1,8 +1,8 @@
 import type { Db } from '@gestilab/db';
-import type { Impostazioni, PinRigenerato } from '@gestilab/shared';
+import type { AggiornaImpostazioni, Impostazioni, PinRigenerato } from '@gestilab/shared';
 
 import type { ClientAuthService } from '../../servizi/auth-service.js';
-import { leggiImpostazioni } from './repository.js';
+import { aggiornaImpostazioni, leggiImpostazioni } from './repository.js';
 
 export interface DipendenzeAdminImpostazioni {
   db: Db;
@@ -11,6 +11,14 @@ export interface DipendenzeAdminImpostazioni {
 
 export async function impostazioni(deps: DipendenzeAdminImpostazioni, tenantId: string): Promise<Impostazioni> {
   return leggiImpostazioni(deps.db, tenantId);
+}
+
+export async function modificaImpostazioni(
+  deps: DipendenzeAdminImpostazioni,
+  tenantId: string,
+  dati: AggiornaImpostazioni,
+): Promise<Impostazioni> {
+  return aggiornaImpostazioni(deps.db, tenantId, dati);
 }
 
 /**

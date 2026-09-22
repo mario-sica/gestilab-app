@@ -1,17 +1,24 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AREE_SESSIONE } from '@gestilab/shared';
+import { AREE_SESSIONE_UTENTE } from '@gestilab/shared';
 
-import { leggiSessione } from '../lib/sessione.js';
+import { leggiSessione, leggiSessioneDocente } from '../lib/sessione.js';
 
 // docs/02 § Routing: "/ → se sessione valida, redirect all'area; altrimenti
-// scelta area". Ordine di AREE_SESSIONE: chi ha più sessioni (raro) va
-// alla prima. Docente: arriva con il task 1.5.
+// scelta area". Ordine di AREE_SESSIONE_UTENTE: chi ha più sessioni (raro)
+// va alla prima. Il docente si controlla a parte (leggiSessioneDocente:
+// niente ruolo, tabella diversa) — non prima delle altre due, per una
+// ragione pratica: /docente esiste da questo task (1.5) solo come
+// segnaposto, mentre /admin e /tecnico sono aree vere; un admin che ha
+// anche un accesso docente attivo non deve ritrovarsi spedito lì.
 export default async function PaginaHome(): Promise<React.JSX.Element> {
-  for (const area of AREE_SESSIONE) {
+  for (const area of AREE_SESSIONE_UTENTE) {
     if (await leggiSessione(area)) {
       redirect(`/${area}`);
     }
+  }
+  if (await leggiSessioneDocente()) {
+    redirect('/docente');
   }
 
   return (

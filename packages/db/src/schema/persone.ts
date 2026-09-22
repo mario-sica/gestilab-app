@@ -1,5 +1,6 @@
 import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { QUALIFICHE_PERSONA } from '@gestilab/shared';
 
 import { anniScolastici } from './anni-scolastici.js';
 import { istituti } from './istituti.js';
@@ -8,15 +9,12 @@ import { policyIsolamentoTenant } from './_rls.js';
 // docs/01-dominio.md — Gruppo A — persone (elenco segnalanti: docenti e
 // altro personale, non gli utenti applicativi). Soft delete via
 // eliminato_il (una delle sole due tabelle con soft delete, l'altra è
-// asset). Indice trigram su nome+cognome per l'autocomplete di ricerca:
-// richiede l'estensione pg_trgm, abilitata nella migrazione.
+// asset). Indice trigram su nome+cognome per l'autocomplete di ricerca
+// (task 1.5): richiede l'estensione pg_trgm, abilitata nella migrazione.
+// I valori vengono da packages/shared (QUALIFICHE_PERSONA), stessa scelta
+// già fatta per utente_ruolo — una lista sola, non due da tenere allineate.
 
-export const personaQualifica = pgEnum('persona_qualifica', [
-  'docente',
-  'collaboratore',
-  'amministrativo',
-  'altro',
-]);
+export const personaQualifica = pgEnum('persona_qualifica', QUALIFICHE_PERSONA);
 
 export const persone = pgTable(
   'persone',

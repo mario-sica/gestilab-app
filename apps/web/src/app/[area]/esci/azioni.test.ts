@@ -42,7 +42,7 @@ describe('esci', () => {
   it('con un\'area sconosciuta nel form risponde con un errore, senza toccare cookie né servizio', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch');
 
-    const risultato = await esci({}, datiForm('docente'));
+    const risultato = await esci({}, datiForm('ospite'));
 
     expect(risultato.errore).toBe('Area non valida.');
     expect(fetchSpy).not.toHaveBeenCalled();

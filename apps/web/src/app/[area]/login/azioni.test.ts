@@ -41,7 +41,7 @@ describe('accedi', () => {
   it('con un\'area sconosciuta nel form risponde con un errore, senza chiamare gestilab-auth-service', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch');
 
-    const risultato = await accedi({}, datiForm('docente', 'a@esempio.it', 'segreto'));
+    const risultato = await accedi({}, datiForm('ospite', 'a@esempio.it', 'segreto'));
 
     expect(risultato.errore).toBe('Area non valida.');
     expect(fetchSpy).not.toHaveBeenCalled();

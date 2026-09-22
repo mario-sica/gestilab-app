@@ -63,11 +63,19 @@ Ruoli: `admin`. Corpo: `schemaNuovoInvitoUtente` (`packages/shared`): `email`, `
 
 Ruoli: `admin`, `supervisore`. Risponde `schemaUtenteElenco[]` (`packages/shared`): id, email, nome, cognome, ruolo, attivo, `passwordImpostata` (ha già accettato l'invito), `ultimoAccesso`. Mai `password_hash`. Ordinato per cognome e nome, **senza paginazione**: gli utenti di un istituto sono decine, non migliaia — la paginazione si definisce con la prima lista aperta (asset), non qui.
 
-### `GET /api/v1/admin/impostazioni` · `POST /api/v1/admin/impostazioni/pin-docente` — PIN d'istituto (task 1.4)
+### `GET /api/v1/admin/impostazioni` · `PATCH /api/v1/admin/impostazioni` · `POST /api/v1/admin/impostazioni/pin-docente` — accesso docente (task 1.4/1.5)
 
-`GET` (admin, supervisore): `{ modalitaAccessoDocente, pinImpostato }` — mai il PIN, che non è rileggibile (esiste solo l'hash). `POST …/pin-docente` (solo admin): chiede a gestilab-auth-service la rigenerazione (`POST /pin-istituto/rigenera`: 6 cifre, Argon2id in `istituti.pin_istituto_hash`, revoca di tutte le `sessioni_docente` attive nella stessa transazione) e risponde `{ pin, sessioniDocenteRevocate }` **una sola volta**: il PIN non viene conservato né loggato (`redact` su `pin`).
+`GET` (admin, supervisore): `{ modalitaAccessoDocente, pinImpostato }` — mai il PIN, che non è rileggibile (esiste solo l'hash). `PATCH` (solo admin): corpo `schemaAggiornaImpostazioni` (`packages/shared`), `{ modalitaAccessoDocente }` tra `solo_qr` | `pin_istituto` | `pin_personale` (`MODALITA_ACCESSO_DOCENTE_SELEZIONABILI` — non `sso`, non ancora implementato, RF-A5 V1); scrittura diretta su `istituti`, nessuna chiamata a gestilab-auth-service (è dominio, non una credenziale). `POST …/pin-docente` (solo admin): chiede a gestilab-auth-service la rigenerazione (`POST /pin-istituto/rigenera`: 6 cifre, Argon2id in `istituti.pin_istituto_hash`, revoca di tutte le `sessioni_docente` attive nella stessa transazione) e risponde `{ pin, sessioniDocenteRevocate }` **una sola volta**: il PIN non viene conservato né loggato (`redact` su `pin`).
 
 Se l'auth-service o la coda falliscono l'utente resta creato ma senza invito (nessun rollback: l'Admin lo vede in elenco e lo reinvita, che è anche la via per un link scaduto). L'invio dell'email è asincrono (coda `email`, `apps/worker`): un `201` dice che l'email è stata accodata, non consegnata.
+
+## Area docente: `/api/v1/docente/*` (task 1.5)
+
+Contesto Fastify dedicato, come `/admin/*` ma **senza `pluginSessione`**: solo `pluginTenant`, perché queste rotte servono la pagina di login, prima che una sessione esista. `request.utente` non esiste qui.
+
+### `GET /api/v1/docente/persone?query=…` — autocomplete del login docente
+
+Pubblico (nessuna sessione), tenant-scoped. `query` minimo 2 caratteri (`400 RICHIESTA_NON_VALIDA` sotto soglia — su un endpoint pubblico una ricerca troppo corta esporrebbe l'intero elenco). Risponde `schemaPersonaRicerca[]` (`packages/shared`): `id`, `nome`, `cognome`, `qualifica` — solo persone attive, non eliminate, dell'anno scolastico corrente, il cui `nome || ' ' || cognome` contiene `query` (`ILIKE`, indice trigram di `persone`). Risponde sempre una **lista vuota**, mai un errore, se `istituti.modalita_accesso_docente` non è `pin_istituto` o `pin_personale`, o l'istituto non è attivo: un elenco pubblico di nomi non serve a nulla dove il login docente non è attivo, ed è superficie esposta senza motivo.
 
 ## Rate limit
 

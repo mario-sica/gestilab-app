@@ -6,6 +6,7 @@ import { VERSIONE_API, type Env } from '@gestilab/shared';
 
 import { rotteAdminImpostazioni } from './moduli/admin-impostazioni/rotte.js';
 import { rotteAdminUtenti } from './moduli/admin-utenti/rotte.js';
+import { rotteDocente } from './moduli/docente/rotte.js';
 import { rotteSalute } from './moduli/salute/rotte.js';
 import { pluginCodaEmail } from './plugin/coda-email.js';
 import { pluginErrori } from './plugin/errori.js';
@@ -56,6 +57,19 @@ export async function costruisciApp(env: EnvApp) {
       await admin.register(rotteAdminImpostazioni, { db, authService });
     },
     { prefix: `/api/${VERSIONE_API}/admin` },
+  );
+
+  // Area docente: solo tenant dall'header rivalidato, NESSUNA sessione —
+  // usata dalla pagina di login prima che una sessione esista (task 1.5).
+  // Un contesto a parte, non dentro quello admin: qui pluginSessione non è
+  // mai registrato, quindi request.utente non esiste per queste rotte, a
+  // differenza di /admin/*.
+  await app.register(
+    async (docente) => {
+      await docente.register(pluginTenant, { db });
+      await docente.register(rotteDocente, { db });
+    },
+    { prefix: `/api/${VERSIONE_API}/docente` },
   );
 
   return app;

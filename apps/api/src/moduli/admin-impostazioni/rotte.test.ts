@@ -120,4 +120,50 @@ describe('/api/v1/admin/impostazioni', () => {
     expect(rigenera.json().errore.dettagli).toEqual({ areaCorretta: 'admin' });
     expect(rigeneraPinIstituto).not.toHaveBeenCalled();
   });
+
+  it('PATCH (admin) cambia la modalità di accesso docente', async () => {
+    const app = await creaApp();
+    const token = await sessione();
+
+    const risposta = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/admin/impostazioni',
+      headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` },
+      payload: { modalitaAccessoDocente: 'pin_istituto' },
+    });
+
+    expect(risposta.statusCode).toBe(200);
+    expect(risposta.json()).toEqual({ modalitaAccessoDocente: 'pin_istituto', pinImpostato: false });
+    const [riga] = await db.select({ modalitaAccessoDocente: istituti.modalitaAccessoDocente }).from(istituti).where(eq(istituti.id, istitutoId));
+    expect(riga?.modalitaAccessoDocente).toBe('pin_istituto');
+  });
+
+  it('PATCH con "sso" (non selezionabile) risponde 400', async () => {
+    const app = await creaApp();
+    const token = await sessione();
+
+    const risposta = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/admin/impostazioni',
+      headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` },
+      payload: { modalitaAccessoDocente: 'sso' },
+    });
+
+    expect(risposta.statusCode).toBe(400);
+  });
+
+  it('un supervisore non può cambiare la modalità (403)', async () => {
+    await withTenant(db, istitutoId, (tx) => tx.update(utenti).set({ ruolo: 'supervisore' }).where(eq(utenti.id, utenteId)));
+    const app = await creaApp();
+    const token = await sessione();
+
+    const risposta = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/admin/impostazioni',
+      headers: { 'x-tenant-slug': slug, cookie: `gl_s_adm=${token}` },
+      payload: { modalitaAccessoDocente: 'pin_istituto' },
+    });
+
+    expect(risposta.statusCode).toBe(403);
+  });
 });

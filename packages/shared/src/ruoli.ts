@@ -1,4 +1,4 @@
-import type { AreaSessione } from './sessione.js';
+import type { AreaSessioneUtente } from './sessione.js';
 
 // Ruoli degli utenti (docs/01-dominio.md — Gruppo A: admin/AT/supervisore,
 // non i docenti, che sono "persone"). Fonte unica: packages/db ne deriva
@@ -11,7 +11,7 @@ export type RuoloUtente = (typeof RUOLI_UTENTE)[number];
 // vede l'area admin in sola lettura — stessa area dell'admin, ruolo
 // diverso. Ogni ruolo ha una sola area: è ciò che permette di dire "vai
 // all'area corretta" su un 403 (task 1.1) senza indovinare.
-export const AREA_PER_RUOLO: Record<RuoloUtente, AreaSessione> = {
+export const AREA_PER_RUOLO: Record<RuoloUtente, AreaSessioneUtente> = {
   admin: 'admin',
   supervisore: 'admin',
   at: 'tecnico',
@@ -20,7 +20,7 @@ export const AREA_PER_RUOLO: Record<RuoloUtente, AreaSessione> = {
 // Vista inversa, derivata (non scritta a mano, altrimenti le due
 // andrebbero mantenute sincronizzate): usata da gestilab-auth-service per
 // rifiutare un login sull'area sbagliata.
-export const RUOLI_PER_AREA: Record<AreaSessione, readonly RuoloUtente[]> = {
+export const RUOLI_PER_AREA: Record<AreaSessioneUtente, readonly RuoloUtente[]> = {
   admin: RUOLI_UTENTE.filter((ruolo) => AREA_PER_RUOLO[ruolo] === 'admin'),
   tecnico: RUOLI_UTENTE.filter((ruolo) => AREA_PER_RUOLO[ruolo] === 'tecnico'),
 };
