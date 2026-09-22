@@ -1,0 +1,1997 @@
+{
+  "id": "e7af51f4-2f07-4c4b-ba02-039010f203de",
+  "prevId": "59d269f8-674c-4aac-a502-138b470d1cb5",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.istituti": {
+      "name": "istituti",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dominio_personalizzato": {
+          "name": "dominio_personalizzato",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "codice_meccanografico": {
+          "name": "codice_meccanografico",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "denominazione": {
+          "name": "denominazione",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipologia": {
+          "name": "tipologia",
+          "type": "istituto_tipologia",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "indirizzo": {
+          "name": "indirizzo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "piano_abbonamento": {
+          "name": "piano_abbonamento",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "limite_asset": {
+          "name": "limite_asset",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stato": {
+          "name": "stato",
+          "type": "istituto_stato",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attivo'"
+        },
+        "data_scadenza_contratto": {
+          "name": "data_scadenza_contratto",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modalita_accesso_docente": {
+          "name": "modalita_accesso_docente",
+          "type": "istituto_modalita_accesso_docente",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'solo_qr'"
+        },
+        "pin_istituto_hash": {
+          "name": "pin_istituto_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pin_istituto_scadenza": {
+          "name": "pin_istituto_scadenza",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pagina_pubblica_attiva": {
+          "name": "pagina_pubblica_attiva",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "captcha_attivo": {
+          "name": "captcha_attivo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "retention_anni": {
+          "name": "retention_anni",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "logo_key": {
+          "name": "logo_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "colore_primario": {
+          "name": "colore_primario",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "istituti_slug_unique": {
+          "name": "istituti_slug_unique",
+          "columns": [
+            "slug"
+          ],
+          "nullsNotDistinct": false
+        },
+        "istituti_dominio_personalizzato_unique": {
+          "name": "istituti_dominio_personalizzato_unique",
+          "columns": [
+            "dominio_personalizzato"
+          ],
+          "nullsNotDistinct": false
+        },
+        "istituti_codice_meccanografico_unique": {
+          "name": "istituti_codice_meccanografico_unique",
+          "columns": [
+            "codice_meccanografico"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.utenti": {
+      "name": "utenti",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cognome": {
+          "name": "cognome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ruolo": {
+          "name": "ruolo",
+          "type": "utente_ruolo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attivo": {
+          "name": "attivo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "totp_secret_cifrato": {
+          "name": "totp_secret_cifrato",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "provider_sso": {
+          "name": "provider_sso",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sso_subject": {
+          "name": "sso_subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ultimo_accesso": {
+          "name": "ultimo_accesso",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "utenti_istituto_id_email_idx": {
+          "name": "utenti_istituto_id_email_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "utenti_istituto_id_istituti_id_fk": {
+          "name": "utenti_istituto_id_istituti_id_fk",
+          "tableFrom": "utenti",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"utenti\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.anni_scolastici": {
+      "name": "anni_scolastici",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "codice": {
+          "name": "codice",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_inizio": {
+          "name": "data_inizio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_fine": {
+          "name": "data_fine",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "corrente": {
+          "name": "corrente",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "anni_scolastici_istituto_id_codice_idx": {
+          "name": "anni_scolastici_istituto_id_codice_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "codice",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "anni_scolastici_un_corrente_per_istituto_idx": {
+          "name": "anni_scolastici_un_corrente_per_istituto_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "where": "\"anni_scolastici\".\"corrente\" = true",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "anni_scolastici_istituto_id_istituti_id_fk": {
+          "name": "anni_scolastici_istituto_id_istituti_id_fk",
+          "tableFrom": "anni_scolastici",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "anni_scolastici_created_by_utenti_id_fk": {
+          "name": "anni_scolastici_created_by_utenti_id_fk",
+          "tableFrom": "anni_scolastici",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "tableTo": "utenti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"anni_scolastici\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.plessi": {
+      "name": "plessi",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "indirizzo": {
+          "name": "indirizzo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "codice_meccanografico_plesso": {
+          "name": "codice_meccanografico_plesso",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "plessi_istituto_id_istituti_id_fk": {
+          "name": "plessi_istituto_id_istituti_id_fk",
+          "tableFrom": "plessi",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "plessi_created_by_utenti_id_fk": {
+          "name": "plessi_created_by_utenti_id_fk",
+          "tableFrom": "plessi",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "tableTo": "utenti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"plessi\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.ambienti": {
+      "name": "ambienti",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "plesso_id": {
+          "name": "plesso_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "ambiente_tipo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "codice_breve": {
+          "name": "codice_breve",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "piano": {
+          "name": "piano",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "area_at": {
+          "name": "area_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "qr_token": {
+          "name": "qr_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attivo": {
+          "name": "attivo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ambienti_istituto_id_istituti_id_fk": {
+          "name": "ambienti_istituto_id_istituti_id_fk",
+          "tableFrom": "ambienti",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "ambienti_plesso_id_plessi_id_fk": {
+          "name": "ambienti_plesso_id_plessi_id_fk",
+          "tableFrom": "ambienti",
+          "columnsFrom": [
+            "plesso_id"
+          ],
+          "tableTo": "plessi",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "ambienti_created_by_utenti_id_fk": {
+          "name": "ambienti_created_by_utenti_id_fk",
+          "tableFrom": "ambienti",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "tableTo": "utenti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ambienti_qr_token_unique": {
+          "name": "ambienti_qr_token_unique",
+          "columns": [
+            "qr_token"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"ambienti\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.affidamenti_ambienti": {
+      "name": "affidamenti_ambienti",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "utente_id": {
+          "name": "utente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ambiente_id": {
+          "name": "ambiente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anno_scolastico_id": {
+          "name": "anno_scolastico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_inizio": {
+          "name": "data_inizio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_fine": {
+          "name": "data_fine",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "affidamenti_ambienti_istituto_id_istituti_id_fk": {
+          "name": "affidamenti_ambienti_istituto_id_istituti_id_fk",
+          "tableFrom": "affidamenti_ambienti",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "affidamenti_ambienti_utente_id_utenti_id_fk": {
+          "name": "affidamenti_ambienti_utente_id_utenti_id_fk",
+          "tableFrom": "affidamenti_ambienti",
+          "columnsFrom": [
+            "utente_id"
+          ],
+          "tableTo": "utenti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "affidamenti_ambienti_ambiente_id_ambienti_id_fk": {
+          "name": "affidamenti_ambienti_ambiente_id_ambienti_id_fk",
+          "tableFrom": "affidamenti_ambienti",
+          "columnsFrom": [
+            "ambiente_id"
+          ],
+          "tableTo": "ambienti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "affidamenti_ambienti_anno_scolastico_id_anni_scolastici_id_fk": {
+          "name": "affidamenti_ambienti_anno_scolastico_id_anni_scolastici_id_fk",
+          "tableFrom": "affidamenti_ambienti",
+          "columnsFrom": [
+            "anno_scolastico_id"
+          ],
+          "tableTo": "anni_scolastici",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"affidamenti_ambienti\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.persone": {
+      "name": "persone",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cognome": {
+          "name": "cognome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qualifica": {
+          "name": "qualifica",
+          "type": "persona_qualifica",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anno_scolastico_id": {
+          "name": "anno_scolastico_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attivo": {
+          "name": "attivo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "pin_personale_hash": {
+          "name": "pin_personale_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eliminato_il": {
+          "name": "eliminato_il",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "persone_nome_cognome_trgm_idx": {
+          "name": "persone_nome_cognome_trgm_idx",
+          "columns": [
+            {
+              "expression": "(\"nome\" || ' ' || \"cognome\") gin_trgm_ops",
+              "isExpression": true,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "persone_istituto_id_istituti_id_fk": {
+          "name": "persone_istituto_id_istituti_id_fk",
+          "tableFrom": "persone",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "persone_anno_scolastico_id_anni_scolastici_id_fk": {
+          "name": "persone_anno_scolastico_id_anni_scolastici_id_fk",
+          "tableFrom": "persone",
+          "columnsFrom": [
+            "anno_scolastico_id"
+          ],
+          "tableTo": "anni_scolastici",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"persone\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.fornitori": {
+      "name": "fornitori",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "telefono": {
+          "name": "telefono",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "portale_assistenza": {
+          "name": "portale_assistenza",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fornitori_istituto_id_istituti_id_fk": {
+          "name": "fornitori_istituto_id_istituti_id_fk",
+          "tableFrom": "fornitori",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"fornitori\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.contratti": {
+      "name": "contratti",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fornitore_id": {
+          "name": "fornitore_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "contratto_tipo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "riferimento": {
+          "name": "riferimento",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_inizio": {
+          "name": "data_inizio",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_fine": {
+          "name": "data_fine",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "condizioni": {
+          "name": "condizioni",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "come_richiedere_intervento": {
+          "name": "come_richiedere_intervento",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "contratti_istituto_id_istituti_id_fk": {
+          "name": "contratti_istituto_id_istituti_id_fk",
+          "tableFrom": "contratti",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "contratti_fornitore_id_fornitori_id_fk": {
+          "name": "contratti_fornitore_id_fornitori_id_fk",
+          "tableFrom": "contratti",
+          "columnsFrom": [
+            "fornitore_id"
+          ],
+          "tableTo": "fornitori",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"contratti\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.tipi_asset": {
+      "name": "tipi_asset",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "categoria": {
+          "name": "categoria",
+          "type": "tipo_asset_categoria",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_attributi": {
+          "name": "schema_attributi",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guida_rapida_default_id": {
+          "name": "guida_rapida_default_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "etichettabile": {
+          "name": "etichettabile",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tipi_asset_istituto_id_istituti_id_fk": {
+          "name": "tipi_asset_istituto_id_istituti_id_fk",
+          "tableFrom": "tipi_asset",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation_o_catalogo_globale": {
+          "name": "tenant_isolation_o_catalogo_globale",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"tipi_asset\".\"istituto_id\" IS NULL OR \"tipi_asset\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.asset": {
+      "name": "asset",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ambiente_id": {
+          "name": "ambiente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo_asset_id": {
+          "name": "tipo_asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_asset_id": {
+          "name": "parent_asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "etichetta": {
+          "name": "etichetta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "marca": {
+          "name": "marca",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modello": {
+          "name": "modello",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seriale": {
+          "name": "seriale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "numero_inventario": {
+          "name": "numero_inventario",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "categoria_inventariale": {
+          "name": "categoria_inventariale",
+          "type": "asset_categoria_inventariale",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "proprieta": {
+          "name": "proprieta",
+          "type": "asset_proprieta",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fornitore_id": {
+          "name": "fornitore_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "contratto_id": {
+          "name": "contratto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_acquisto": {
+          "name": "data_acquisto",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_fine_garanzia": {
+          "name": "data_fine_garanzia",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valore_acquisto": {
+          "name": "valore_acquisto",
+          "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stato": {
+          "name": "stato",
+          "type": "asset_stato",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attivo'"
+        },
+        "codice_breve": {
+          "name": "codice_breve",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "qr_token": {
+          "name": "qr_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attributi": {
+          "name": "attributi",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pagina_pubblica_attiva": {
+          "name": "pagina_pubblica_attiva",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "data_dismissione": {
+          "name": "data_dismissione",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "riferimento_verbale_scarico": {
+          "name": "riferimento_verbale_scarico",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "eliminato_il": {
+          "name": "eliminato_il",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "asset_istituto_id_etichetta_idx": {
+          "name": "asset_istituto_id_etichetta_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "etichetta",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "asset_istituto_id_codice_breve_idx": {
+          "name": "asset_istituto_id_codice_breve_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "codice_breve",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "asset_istituto_id_ambiente_id_idx": {
+          "name": "asset_istituto_id_ambiente_id_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "ambiente_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "asset_istituto_id_istituti_id_fk": {
+          "name": "asset_istituto_id_istituti_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "asset_ambiente_id_ambienti_id_fk": {
+          "name": "asset_ambiente_id_ambienti_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "ambiente_id"
+          ],
+          "tableTo": "ambienti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "asset_tipo_asset_id_tipi_asset_id_fk": {
+          "name": "asset_tipo_asset_id_tipi_asset_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "tipo_asset_id"
+          ],
+          "tableTo": "tipi_asset",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "asset_parent_asset_id_asset_id_fk": {
+          "name": "asset_parent_asset_id_asset_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "parent_asset_id"
+          ],
+          "tableTo": "asset",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "asset_fornitore_id_fornitori_id_fk": {
+          "name": "asset_fornitore_id_fornitori_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "fornitore_id"
+          ],
+          "tableTo": "fornitori",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "asset_contratto_id_contratti_id_fk": {
+          "name": "asset_contratto_id_contratti_id_fk",
+          "tableFrom": "asset",
+          "columnsFrom": [
+            "contratto_id"
+          ],
+          "tableTo": "contratti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "asset_qr_token_unique": {
+          "name": "asset_qr_token_unique",
+          "columns": [
+            "qr_token"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"asset\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.movimenti_asset": {
+      "name": "movimenti_asset",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "istituto_id": {
+          "name": "istituto_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "movimento_asset_tipo",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "da_ambiente_id": {
+          "name": "da_ambiente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "a_ambiente_id": {
+          "name": "a_ambiente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "affidatario_testo": {
+          "name": "affidatario_testo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data": {
+          "name": "data",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_prevista_rientro": {
+          "name": "data_prevista_rientro",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "utente_id": {
+          "name": "utente_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "movimenti_asset_istituto_id_asset_id_idx": {
+          "name": "movimenti_asset_istituto_id_asset_id_idx",
+          "columns": [
+            {
+              "expression": "istituto_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "asset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "movimenti_asset_istituto_id_istituti_id_fk": {
+          "name": "movimenti_asset_istituto_id_istituti_id_fk",
+          "tableFrom": "movimenti_asset",
+          "columnsFrom": [
+            "istituto_id"
+          ],
+          "tableTo": "istituti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "movimenti_asset_asset_id_asset_id_fk": {
+          "name": "movimenti_asset_asset_id_asset_id_fk",
+          "tableFrom": "movimenti_asset",
+          "columnsFrom": [
+            "asset_id"
+          ],
+          "tableTo": "asset",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "movimenti_asset_da_ambiente_id_ambienti_id_fk": {
+          "name": "movimenti_asset_da_ambiente_id_ambienti_id_fk",
+          "tableFrom": "movimenti_asset",
+          "columnsFrom": [
+            "da_ambiente_id"
+          ],
+          "tableTo": "ambienti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "movimenti_asset_a_ambiente_id_ambienti_id_fk": {
+          "name": "movimenti_asset_a_ambiente_id_ambienti_id_fk",
+          "tableFrom": "movimenti_asset",
+          "columnsFrom": [
+            "a_ambiente_id"
+          ],
+          "tableTo": "ambienti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "movimenti_asset_utente_id_utenti_id_fk": {
+          "name": "movimenti_asset_utente_id_utenti_id_fk",
+          "tableFrom": "movimenti_asset",
+          "columnsFrom": [
+            "utente_id"
+          ],
+          "tableTo": "utenti",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "tenant_isolation": {
+          "name": "tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "public"
+          ],
+          "using": "\"movimenti_asset\".\"istituto_id\" = current_setting('app.tenant_id', true)::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {
+    "public.istituto_modalita_accesso_docente": {
+      "name": "istituto_modalita_accesso_docente",
+      "schema": "public",
+      "values": [
+        "solo_qr",
+        "pin_istituto",
+        "pin_personale",
+        "sso"
+      ]
+    },
+    "public.istituto_stato": {
+      "name": "istituto_stato",
+      "schema": "public",
+      "values": [
+        "attivo",
+        "sospeso",
+        "cessato"
+      ]
+    },
+    "public.istituto_tipologia": {
+      "name": "istituto_tipologia",
+      "schema": "public",
+      "values": [
+        "liceo",
+        "tecnico",
+        "professionale",
+        "IISS"
+      ]
+    },
+    "public.utente_ruolo": {
+      "name": "utente_ruolo",
+      "schema": "public",
+      "values": [
+        "admin",
+        "at",
+        "supervisore"
+      ]
+    },
+    "public.ambiente_tipo": {
+      "name": "ambiente_tipo",
+      "schema": "public",
+      "values": [
+        "laboratorio",
+        "aula",
+        "ufficio",
+        "deposito",
+        "palestra",
+        "altro"
+      ]
+    },
+    "public.persona_qualifica": {
+      "name": "persona_qualifica",
+      "schema": "public",
+      "values": [
+        "docente",
+        "collaboratore",
+        "amministrativo",
+        "altro"
+      ]
+    },
+    "public.contratto_tipo": {
+      "name": "contratto_tipo",
+      "schema": "public",
+      "values": [
+        "assistenza",
+        "noleggio",
+        "garanzia_estesa"
+      ]
+    },
+    "public.tipo_asset_categoria": {
+      "name": "tipo_asset_categoria",
+      "schema": "public",
+      "values": [
+        "informatica",
+        "audiovideo",
+        "stampa",
+        "rete",
+        "scientifico",
+        "officina",
+        "arredo",
+        "altro"
+      ]
+    },
+    "public.asset_categoria_inventariale": {
+      "name": "asset_categoria_inventariale",
+      "schema": "public",
+      "values": [
+        "I",
+        "III",
+        "non_inventariato"
+      ]
+    },
+    "public.asset_proprieta": {
+      "name": "asset_proprieta",
+      "schema": "public",
+      "values": [
+        "istituto",
+        "ente_locale",
+        "comodato",
+        "noleggio",
+        "altro"
+      ]
+    },
+    "public.asset_stato": {
+      "name": "asset_stato",
+      "schema": "public",
+      "values": [
+        "attivo",
+        "guasto",
+        "in_riparazione",
+        "in_prestito",
+        "in_magazzino",
+        "dismesso"
+      ]
+    },
+    "public.movimento_asset_tipo": {
+      "name": "movimento_asset_tipo",
+      "schema": "public",
+      "values": [
+        "trasferimento",
+        "prestito",
+        "rientro",
+        "riparazione_esterna",
+        "rientro_riparazione",
+        "dismissione"
+      ]
+    }
+  },
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

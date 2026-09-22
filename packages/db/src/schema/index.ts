@@ -8,6 +8,11 @@ export * from './plessi.js';
 export * from './ambienti.js';
 export * from './affidamenti-ambienti.js';
 export * from './persone.js';
+export * from './fornitori.js';
+export * from './contratti.js';
+export * from './tipi-asset.js';
+export * from './asset.js';
+export * from './movimenti-asset.js';
 
 // Non più solo interno a questo pacchetto (prefisso "_" storico): serve
 // anche a gestilab-auth-service (submodule su un tag di questo repo, vedi
