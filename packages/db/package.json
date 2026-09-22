@@ -15,6 +15,7 @@
     "test": "vitest run",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
+    "tenant:create": "tsx src/tenant-create.ts",
     "generate": "drizzle-kit generate",
     "backup:crea": "tsx src/backup.ts",
     "backup:verifica": "tsx src/verifica-backup.ts"
